@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class ClientController extends Controller
@@ -73,13 +74,18 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:clients,email',
+             'email'      => [
+            'required',
+            'email',
+            'max:250',
+            Rule::unique('employees', 'email')->ignore($client->id),
+        ],
             'phone' => 'required|string',
             'role' => 'required|string'
         ]);
 
         $client->update($validated);
-
+        
         return redirect()->route('clients.index')
             ->with('success', 'Client updated successfully!');
 

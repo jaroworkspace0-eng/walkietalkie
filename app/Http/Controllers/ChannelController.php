@@ -72,10 +72,10 @@ class ChannelController extends Controller
             'name' => 'required|string',
             'category' => 'required|string',
             'type' => 'required|string',
-            'client_id' => 'required',
+            'client_id' => 'required|exists:clients,id',
         ]);
 
-        $channel->update();
+        $channel->update($validated);
 
         return redirect()->route('channels.index')
             ->with('success', 'Channel updated successfully!');

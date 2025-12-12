@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class EmployeeController extends Controller
@@ -74,12 +75,21 @@ class EmployeeController extends Controller
          $validated = $request->validate([
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'email' => 'required|email|max:250|unique:employees,email',
+            'email'      => [
+            'required',
+            'email',
+            'max:250',
+            Rule::unique('employees', 'email')->ignore($employee->id),
+        ],
             'phone' => 'required|string|max:15',
-            'occupation' => 'required|string'
+            'occupation' => 'required|string',
+            'client_id' => 'required|exists:clients,id',
+            'channel_id' => 'required|exists:channels,id',
         ]);
 
-        $employee->create($validated);
+        $employee->update($validated);
+
+        // return response()->json($employee);
         
         return redirect()->route('employee.index')
             ->with('success', 'Employee updated successfully!');
