@@ -15,7 +15,7 @@ class ChannelController extends Controller
     {
         $channel = Channel::paginate(10);
 
-         return Inertia::render('channels.index', [
+         return Inertia::render('Channels/index', [
             'channels' => $channel
         ]);
     }

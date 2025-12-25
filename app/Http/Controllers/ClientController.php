@@ -16,7 +16,7 @@ class ClientController extends Controller
     {
         $clients = Client::paginate(10);
 
-          return Inertia::render('Clients.index', [
+          return Inertia::render('Clients/Index', [
             'clients' => $clients
         ]);
 
@@ -46,7 +46,7 @@ class ClientController extends Controller
         ]);
 
         Client::create($validated);
-        
+
         return redirect()->route('clients.index')
             ->with('success', 'Client created successfully!');
     }
@@ -85,7 +85,7 @@ class ClientController extends Controller
         ]);
 
         $client->update($validated);
-        
+
         return redirect()->route('clients.index')
             ->with('success', 'Client updated successfully!');
 

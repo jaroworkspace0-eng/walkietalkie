@@ -5,6 +5,29 @@ import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 import users from '@/routes/users';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -22,21 +45,21 @@ const breadcrumbs: BreadcrumbItem[] = [
   <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border">
     <div class="flex items-center justify-between gap-8 mb-8">
       <div>
-        <h5
-          class="block font-sans text-xl antialiased font-semibold leading-snug tracking-normal text-blue-gray-900">
-          Users list
-        </h5>
+
         <p class="block mt-1 font-sans text-base antialiased font-normal leading-relaxed text-gray-700">
           See information about all users
         </p>
       </div>
       <div class="flex flex-col gap-2 shrink-0 sm:flex-row">
-        <button
+        <!-- <button
           class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
           type="button">
           add Client
-        </button>
-        <button
+        </button> -->
+         <Dialog>
+    <form>
+      <DialogTrigger as-child>
+              <button
           class="flex select-none items-center gap-3 rounded-lg bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
           type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
@@ -47,6 +70,68 @@ const breadcrumbs: BreadcrumbItem[] = [
           </svg>
           Add user
         </button>
+      </DialogTrigger>
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add User</DialogTitle>
+          <DialogDescription>
+            Fill User details
+          </DialogDescription>
+        </DialogHeader>
+        <div class="grid gap-4">
+          <div class="grid gap-3">
+            <Label for="name-1">First Name</Label>
+            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+          </div>
+           <div class="grid gap-3">
+            <Label for="name-1">Last Name</Label>
+            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+          </div>
+           <div class="grid gap-3">
+            <Label for="name-1">Email</Label>
+            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+          </div>
+           <div class="grid gap-3">
+            <Label for="name-1">Email</Label>
+            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+          </div>
+          <div class="grid gap-3">
+            <Label for="username-1">Contact Number</Label>
+            <Input id="username-1" name="username" default-value="@peduarte" />
+          </div>
+           <div class="grid gap-3">
+            <Label for="name-1">Role</Label>
+            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+          </div>
+               <div class="grid gap-3">
+             <Label for="name-1">Select Client</Label>
+            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>-- Choose category --</option>
+            </select>
+        </div>
+              <div class="grid gap-3">
+             <Label for="name-1">Select Channel</Label>
+            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>-- Choose category --</option>
+            </select>
+        </div>
+
+
+        </div>
+        <DialogFooter>
+          <DialogClose as-child>
+            <Button variant="outline">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button type="submit">
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </form>
+  </Dialog>
+
       </div>
     </div>
 
@@ -100,6 +185,10 @@ const breadcrumbs: BreadcrumbItem[] = [
       </div>
     </div>
   </div>
+
+
+
+
   <div class="p-6 px-0 overflow-scroll">
     <table class="w-full mt-4 text-left table-auto min-w-max">
       <thead>
@@ -108,7 +197,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Member
+              First Name
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" aria-hidden="true" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -120,7 +209,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Roles
+              Last Name
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" aria-hidden="true" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -128,7 +217,69 @@ const breadcrumbs: BreadcrumbItem[] = [
               </svg>
             </p>
           </th>
+            <th
+            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
+            <p
+              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
+              Email
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
+              </svg>
+            </p>
+          </th>
+            <th
+            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
+            <p
+              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
+              Contacts
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
+              </svg>
+            </p>
+          </th>
+            <th
+            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
+            <p
+              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
+              Client
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
+              </svg>
+            </p>
+          </th>
+            <th
+            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
+            <p
+              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
+              Channel
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
+              </svg>
+            </p>
+          </th>
+
           <th
+            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
+            <p
+              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
+              Role
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
+              </svg>
+            </p>
+          </th>
+             <th
+
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
@@ -144,23 +295,11 @@ const breadcrumbs: BreadcrumbItem[] = [
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Employed
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-          <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
             </p>
           </th>
         </tr>
       </thead>
-      <tbody>
+      <!-- <tbody>
         <tr>
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex items-center gap-3">
@@ -442,7 +581,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
           </td>
         </tr>
-      </tbody>
+      </tbody> -->
     </table>
   </div>
   <div class="flex items-center justify-between p-4 border-t border-blue-gray-50">

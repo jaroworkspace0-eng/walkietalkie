@@ -24,22 +24,29 @@ const mainNavItems: NavItem[] = [
         icon: HomeIcon,
     },
      {
-        title: 'Users',
-        href: '/users',
-        icon: Users,
-    },
-        {
         title: 'Clients',
         href: '/clients',
         icon: LayoutGrid,
     },
-      
+         {
+        title: 'Users',
+        href: '/employees',
+        icon: LayoutGrid,
+    },
+    //  {
+    //     title: 'Users',
+    //     href: '/users',
+    //     icon: Users,
+    // },
         {
         title: 'Channels',
         href: '/channels',
         icon: LayoutGrid,
     },
-    
+
+
+
+
 ];
 
 // const footerNavItems: NavItem[] = [
