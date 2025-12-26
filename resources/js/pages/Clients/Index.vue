@@ -1,50 +1,66 @@
-<script setup lang="ts">
+<script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-import users from '@/routes/users';
+import '../../../css/style.css';
 
-import Textarea from 'primevue/textarea';
-
-
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-
+// import { type BreadcrumbItem } from '@/types';
+import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 
+const showModal = ref(false);
 
+const openModal = () => {
+    showModal.value = true;
+}
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Clients',
-        href: '/clients',
-    },
-];
+const closeModal = () => {
+    showModal.value = false;
+}
+
+defineProps({
+  clients: {
+    type: Object,
+    required: true,
+  },
+})
+
+const form = ref({
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+})
+
+const createClient = () => {
+  router.post('/clients', form.value, {
+    onSuccess: () => {
+      resetForm();
+      showModal.value = false;
+    }
+  });
+}
+
+function resetForm() {
+  form.value = {
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    role:'',
+  }
+}
+
+const visit = (url) => {
+  router.visit(url);
+}
 </script>
 
 <template>
-    <Head title="Clients" />
+
+
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <!-- <pre>{{ clients.data }}</pre> -->
         <div class="relative flex flex-col w-full h-full text-gray-700 bg-white shadow-md rounded-xl bg-clip-border">
   <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border">
     <div class="flex items-center justify-between gap-8 mb-8">
@@ -55,69 +71,55 @@ const breadcrumbs: BreadcrumbItem[] = [
         </p>
       </div>
       <div class="flex flex-col gap-2 shrink-0 sm:flex-row">
-        <!-- <button
+        <button
           class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button">
-          add Client
-        </button> -->
-         <Dialog>
-    <form>
-      <DialogTrigger as-child>
-              <button
-          class="flex select-none items-center gap-3 rounded-lg bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button">
-           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-            stroke-width="2" class="w-4 h-4">
-            <path
-              d="M6.25 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM3.25 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM19.75 7.5a.75.75 0 00-1.5 0v2.25H16a.75.75 0 000 1.5h2.25v2.25a.75.75 0 001.5 0v-2.25H22a.75.75 0 000-1.5h-2.25V7.5z">
-            </path>
-          </svg>
+          type="button"
+          @click="openModal">
           Add Client
         </button>
-      </DialogTrigger>
-      <DialogContent class="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add Client</DialogTitle>
-          <DialogDescription>
-            Fill Client details
-          </DialogDescription>
-        </DialogHeader>
-        <div class="grid gap-4">
+    <form @submit.prevent="createClient()">
+
+      <div v-if="showModal">
+        <!-- Overlaying -->
+         <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-25">
+            <!-- Modal Content -->
+             <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+                <h2 class="text-heading">Add Client</h2>
+
+                <div class="grid gap-4">
           <div class="grid gap-3">
-            <Label for="name-1">Client Name</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+            <Label for="name-1">Client</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.name" class="text-red-600 text-sm">{{ $page.props.errors.name }}</p>
           </div>
            <div class="grid gap-3">
-            <Label for="name-1">Contact Number</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+            <Label for="name-1">Contact</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.phone" />
+             <p v-if="$page.props.errors.phone" class="text-red-600 text-sm">{{ $page.props.errors.phone }}</p>
           </div>
            <div class="grid gap-3">
             <Label for="name-1">Email</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.email" />
+             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
           </div>
            <div class="grid gap-3">
-            <Label for="name-1">Adress</Label>
-                <Input id="name-1" name="name" default-value="Pedro Duarte" />
+            <Label for="name-1">Address</Label>
+                <textarea rows="7" v-model="form.address"></textarea>
+                 <p v-if="$page.props.errors.address" class="text-red-600 text-sm">{{ $page.props.errors.address }}</p>
           </div>
-
-
-
-
-
-        </div>
-        <DialogFooter>
-          <DialogClose as-child>
-            <Button variant="outline">
+          <div class="flex items-end w-max">
+            <button type="button" @click="closeModal" class="cancel-btn mr-3">
               Cancel
-            </Button>
-          </DialogClose>
-          <Button type="submit">
+            </button>
+          <button type="submit" class="save-btn">
             Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          </button>
+          </div>
+        </div>
+             </div>
+         </div>
+      </div>
     </form>
-  </Dialog>
 
       </div>
     </div>
@@ -173,10 +175,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     </div>
   </div>
 
-
-
-
-  <div class="p-6 px-0 overflow-scroll">
+<div class="pl-4 pr-4 pt-4 pb-0">
+  <div v-if="$page.props.flash && $page.props.flash.success" class="bg-green-100 text-green-800 p-2 rounded mb-4">
+    {{ $page.props.flash.success }}
+  </div>
+  </div>
+  <div class="pl-6 pr-6 pt-0 px-0 overflow-scroll">
     <table class="w-full mt-4 text-left table-auto min-w-max">
       <thead>
         <tr>
@@ -184,7 +188,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Client Name
+              Client
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" aria-hidden="true" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -196,7 +200,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Contact Number
+              Contact
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" aria-hidden="true" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -232,7 +236,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Role
+              Actions
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" aria-hidden="true" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -248,19 +252,19 @@ const breadcrumbs: BreadcrumbItem[] = [
           </th>
         </tr>
       </thead>
-      <!-- <tbody>
-        <tr>
+       <tbody>
+        <tr v-for="client in clients.data" :key="client.id">
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex items-center gap-3">
               <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-3.jpg"
                 alt="John Michael" class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
               <div class="flex flex-col">
                 <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  John Michael
+                  {{client.name}}
                 </p>
                 <p
                   class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  john@creative-tim.com
+                  {{client.email}}
                 </p>
               </div>
             </div>
@@ -268,30 +272,43 @@ const breadcrumbs: BreadcrumbItem[] = [
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex flex-col">
               <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                Manager
+               {{client.phone}}
               </p>
               <p
                 class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                Organization
+                {{client.role}}
               </p>
             </div>
           </td>
           <td class="p-4 border-b border-blue-gray-50">
             <div class="w-max">
               <div
-                class="relative grid items-center px-2 py-1 font-sans text-xs font-bold text-green-900 uppercase rounded-md select-none whitespace-nowrap bg-green-500/20">
-                <span class="">online</span>
+                class="relative grid items-center px-2 py-1 font-sans font-bold">
+                <span class="">{{ client.email }}</span>
               </div>
             </div>
           </td>
           <td class="p-4 border-b border-blue-gray-50">
             <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-              23/04/18
+              {{client.address}}
             </p>
           </td>
           <td class="p-4 border-b border-blue-gray-50">
             <button
-              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans font-medium text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              type="button">
+              <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
+                  class="w-4 h-4">
+                  <path
+                    d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z">
+                  </path>
+                </svg>
+              </span>
+            </button>
+
+            <button
+              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans font-medium text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
               type="button">
               <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
@@ -304,251 +321,35 @@ const breadcrumbs: BreadcrumbItem[] = [
             </button>
           </td>
         </tr>
-        <tr>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex items-center gap-3">
-              <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-2.jpg"
-                alt="Alexa Liras" class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
-              <div class="flex flex-col">
-                <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  Alexa Liras
-                </p>
-                <p
-                  class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  alexa@creative-tim.com
-                </p>
-              </div>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex flex-col">
-              <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                Programator
-              </p>
-              <p
-                class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                Developer
-              </p>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="w-max">
-              <div
-                class="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                <span class="">offline</span>
-              </div>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-              23/04/18
-            </p>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <button
-              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-              type="button">
-              <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-                  class="w-4 h-4">
-                  <path
-                    d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z">
-                  </path>
-                </svg>
-              </span>
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex items-center gap-3">
-              <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-1.jpg"
-                alt="Laurent Perrier"
-                class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
-              <div class="flex flex-col">
-                <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  Laurent Perrier
-                </p>
-                <p
-                  class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  laurent@creative-tim.com
-                </p>
-              </div>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex flex-col">
-              <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                Executive
-              </p>
-              <p
-                class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                Projects
-              </p>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="w-max">
-              <div
-                class="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                <span class="">offline</span>
-              </div>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-              19/09/17
-            </p>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <button
-              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-              type="button">
-              <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-                  class="w-4 h-4">
-                  <path
-                    d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z">
-                  </path>
-                </svg>
-              </span>
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex items-center gap-3">
-              <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-4.jpg"
-                alt="Michael Levi" class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
-              <div class="flex flex-col">
-                <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  Michael Levi
-                </p>
-                <p
-                  class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  michael@creative-tim.com
-                </p>
-              </div>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex flex-col">
-              <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                Programator
-              </p>
-              <p
-                class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                Developer
-              </p>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="w-max">
-              <div
-                class="relative grid items-center px-2 py-1 font-sans text-xs font-bold text-green-900 uppercase rounded-md select-none whitespace-nowrap bg-green-500/20">
-                <span class="">online</span>
-              </div>
-            </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-              24/12/08
-            </p>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <button
-              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-              type="button">
-              <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-                  class="w-4 h-4">
-                  <path
-                    d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z">
-                  </path>
-                </svg>
-              </span>
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td class="p-4">
-            <div class="flex items-center gap-3">
-              <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-5.jpg"
-                alt="Richard Gran" class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
-              <div class="flex flex-col">
-                <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  Richard Gran
-                </p>
-                <p
-                  class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  richard@creative-tim.com
-                </p>
-              </div>
-            </div>
-          </td>
-          <td class="p-4">
-            <div class="flex flex-col">
-              <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                Manager
-              </p>
-              <p
-                class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                Executive
-              </p>
-            </div>
-          </td>
-          <td class="p-4">
-            <div class="w-max">
-              <div
-                class="relative grid items-center px-2 py-1 font-sans text-xs font-bold uppercase rounded-md select-none whitespace-nowrap bg-blue-gray-500/20 text-blue-gray-900">
-                <span class="">offline</span>
-              </div>
-            </div>
-          </td>
-          <td class="p-4">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-              04/10/21
-            </p>
-          </td>
-          <td class="p-4">
-            <button
-              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-              type="button">
-              <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-                  class="w-4 h-4">
-                  <path
-                    d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z">
-                  </path>
-                </svg>
-              </span>
-            </button>
 
-
-
-
-
-          </td>
-        </tr>
-      </tbody> -->
+      </tbody>
     </table>
   </div>
   <div class="flex items-center justify-between p-4 border-t border-blue-gray-50">
-    <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-      Page 1 of 10
-    </p>
-    <div class="flex gap-2">
-      <button
-        class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-        type="button">
-        Previous
-      </button>
-      <button
-        class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-        type="button">
-        Next
-      </button>
-    </div>
+
+        <div class="text-sm text-gray-600">
+            Showing {{ clients.from }} to {{ clients.to }} of {{ clients.total }} entries
+        </div>
+
+        <div class="flex space-x-2">
+            <template v-for="link in clients.links" :key="link.label">
+                <Link
+                    v-if="link.url"
+                    :href="link.url"
+                    class="px-3 py-1 border rounded"
+                    :class="{
+                        'bg-blue-500 text-white': link.active,
+                        'bg-white text-blue-500': !link.active
+                    }"
+                    v-html="link.label"
+                ></Link>
+                <span
+                    v-else
+                    class="px-3 py-1 border rounded bg-gray-200 text-gray-500"
+                    v-html="link.label"
+                ></span>
+            </template>
+        </div>
   </div>
 </div>
 

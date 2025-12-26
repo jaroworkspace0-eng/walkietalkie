@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Models\Client;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -22,5 +23,11 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('password'),
             'role' => 'admin',
         ]);
+        //    Client::create([
+        //     'name' => 'jaro',
+        //     'phone' => '0622219995',
+        //     'email' => 'joe@example.com',
+        //     'address' => 'germiston',
+        // ]);
     }
 }
