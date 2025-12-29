@@ -1,40 +1,66 @@
-<script setup lang="ts">
+<script setup >
 import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-import users from '@/routes/users';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-
+import '../../../css/style.css';
+import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+
+const showModal = ref(false);
+
+const openModal = () => {
+    showModal.value = true;
+}
+
+const closeModal = () => {
+    showModal.value = false;
+}
+
+defineProps({
+  employee: {
+    type: Object,
+    required: true,
+  },
+})
+
+const form = ref({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    occupation:'',
+    client_id:'',
+    channel_id:'',
+})
+
+const createEmployee = () => {
+  router.post('/employee', form.value, {
+    onSuccess: () => {
+      resetForm();
+      showModal.value = false;
+    }
+  });
+}
+
+function resetForm() {
+  form.value = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    occupation:'',
+    client_id:'',
+    channel_id:'',
+
+  }
+}
 
 
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Users',
-        href: '/users',
-    },
-];
+const visit = (url) => {
+  router.visit(url);
+}
+
+
 </script>
 
 <template>
@@ -50,13 +76,115 @@ const breadcrumbs: BreadcrumbItem[] = [
           See information about all users
         </p>
       </div>
-      <div class="flex flex-col gap-2 shrink-0 sm:flex-row">
-        <!-- <button
+         <div class="flex flex-col gap-2 shrink-0 sm:flex-row">
+        <button
           class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button">
-          add Client
-        </button> -->
-         <Dialog>
+          type="button"
+          @click="openModal">
+          Add User
+        </button>
+         <form @submit.prevent="createEmployee()">
+
+      <div v-if="showModal">
+        <!-- Overlaying -->
+         <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-25">
+            <!-- Modal Content -->
+             <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+                <h2 class="text-heading">Create New User</h2>
+
+                <div class="grid gap-4">
+                    <!-- <div class="grid grid-cols-2 gap-5">
+                         <div class="grid gap-3">
+            <Label for="name-1">Catagory</Label>
+             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>Security</option>
+                 <option value="" selected>Bookshop</option>
+                  <option value="" selected>Electronic</option>
+            </select>
+             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+
+          </div>
+                    </div> -->
+
+          <div class="grid gap-3">
+            <Label for="name-1">First Name </Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.first_name" class="text-red-600 text-sm">{{ $page.props.errors.first_name }}</p>
+          </div>
+          <div class="grid gap-3">
+            <Label for="name-1">Last Name </Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.last_name" class="text-red-600 text-sm">{{ $page.props.errors.last_name }}</p>
+          </div>
+          <div class="grid gap-3">
+            <Label for="name-1">Email </Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.emaail" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+          </div>
+          <div class="grid gap-3">
+            <Label for="name-1">Contact </Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.phone" class="text-red-600 text-sm">{{ $page.props.errors.phone }}</p>
+          </div>
+           <div class="grid gap-3">
+            <Label for="name-1">Occupation </Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.occupation" class="text-red-600 text-sm">{{ $page.props.errors.occupation }}</p>
+          </div>
+
+           <!-- <div class="grid gap-3">
+            <Label for="name-1">Contact</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.phone" />
+             <p v-if="$page.props.errors.phone" class="text-red-600 text-sm">{{ $page.props.errors.phone }}</p>
+          </div> -->
+           <!-- <div class="grid gap-3">
+            <Label for="name-1">Email</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.email" />
+             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+          </div> -->
+          <div class="grid gap-3">
+            <Label for="name-1">Select Channel</Label>
+             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>Security</option>
+                 <option value="" selected>Bookshop</option>
+                  <option value="" selected>Electronic</option>
+            </select>
+             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+          </div>
+           <!-- <div class="grid gap-3">
+            <Label for="name-1">Address</Label>
+                <textarea rows="7" v-model="form.address"></textarea>
+                 <p v-if="$page.props.errors.address" class="text-red-600 text-sm">{{ $page.props.errors.address }}</p>
+          </div> -->
+               <div class="grid gap-3">
+             <Label for="name-1">Select Client</Label>
+            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>Dycom Patrols</option>
+                <option value="" selected>Elsburg security</option>
+            </select>
+        </div>
+                 <!-- <div class="grid gap-3">
+             <Label for="name-1">Type</Label>
+            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>Listen Only</option>
+                <option value="" selected>Listen/speak</option>
+            </select>
+        </div> -->
+          <div class="flex items-end w-max">
+            <button type="button" @click="closeModal" class="cancel-btn mr-3">
+              Cancel
+            </button>
+          <button type="submit" class="save-btn">
+            Save
+          </button>
+          </div>
+        </div>
+             </div>
+         </div>
+      </div>
+    </form>
+
+         <!-- <Dialog>
     <form>
       <DialogTrigger as-child>
               <button
@@ -130,7 +258,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         </DialogFooter>
       </DialogContent>
     </form>
-  </Dialog>
+  </Dialog> -->
 
       </div>
     </div>
@@ -300,7 +428,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         </tr>
       </thead>
       <!-- <tbody>
-        <tr>
+        <tr v-for="employees in employee.data" :key="employees.id>
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex items-center gap-3">
               <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-3.jpg"

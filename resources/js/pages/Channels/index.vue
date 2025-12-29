@@ -1,127 +1,149 @@
-<script setup lang="ts">
+<script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
-import users from '@/routes/users';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import '../../../css/style.css';
 
+// import { type BreadcrumbItem } from '@/types';
+import { Link, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 
 
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Channels',
-        href: '/channels',
-    },
-];
+
+const showModal = ref(false);
+
+const openModal = () => {
+    showModal.value = true;
+}
+
+const closeModal = () => {
+    showModal.value = false;
+}
+
+defineProps({
+  channels: {
+    type: Object,
+    required: true,
+  },
+})
+
+const form = ref({
+    client_id: '',
+    name: '',
+    category: '',
+    type: '',
+})
+
+
+const createChannel = () => {
+  router.post('/channels', form.value, {
+    onSuccess: () => {
+      resetForm();
+      showModal.value = false;
+    }
+  });
+}
+
+function resetForm() {
+  form.value = {
+    client_id: '',
+    name: '',
+    category: '',
+    type: '',
+  }
+}
+
+const visit = (url) => {
+  router.visit(url);
+}
 </script>
 
 <template>
     <Head title="Channels" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="relative flex flex-col w-full h-full text-gray-700 bg-white shadow-md rounded-xl bg-clip-border">
+           <div class="relative flex flex-col w-full h-full text-gray-700 bg-white shadow-md rounded-xl bg-clip-border">
   <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border">
     <div class="flex items-center justify-between gap-8 mb-8">
       <div>
 
         <p class="block mt-1 font-sans text-base antialiased font-normal leading-relaxed text-gray-700">
-          See information about all Channels
+          See information about all Channel
         </p>
       </div>
       <div class="flex flex-col gap-2 shrink-0 sm:flex-row">
-        <!-- <button
+        <button
           class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button">
-          add Client
-        </button> -->
-         <Dialog>
-    <form>
-      <DialogTrigger as-child>
-              <button
-          class="flex select-none items-center gap-3 rounded-lg bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button">
-          <!-- <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-            stroke-width="2" class="w-4 h-4">
-            <path
-              d="M6.25 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM3.25 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM19.75 7.5a.75.75 0 00-1.5 0v2.25H16a.75.75 0 000 1.5h2.25v2.25a.75.75 0 001.5 0v-2.25H22a.75.75 0 000-1.5h-2.25V7.5z">
-            </path>
-          </svg> -->
+          type="button"
+          @click="openModal">
           Add Channel
         </button>
-      </DialogTrigger>
-      <DialogContent class="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add Channel</DialogTitle>
-          <DialogDescription>
-            Fill Channel details
-          </DialogDescription>
-        </DialogHeader>
-        <div class="grid gap-4">
+    <form @submit.prevent="createChannel()">
+
+      <div v-if="showModal">
+        <!-- Overlaying -->
+         <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-25">
+            <!-- Modal Content -->
+             <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+                <h2 class="text-heading">Create New Channel</h2>
+
+                <div class="grid gap-4">
           <div class="grid gap-3">
-            <Label for="name-1">Channel Name</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
+            <Label for="name-1">Channel Name </Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.name" class="text-red-600 text-sm">{{ $page.props.errors.name }}</p>
           </div>
-
-             <div class="grid gap-3">
-             <Label for="name-1">Select category</Label>
-            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>-- Choose category --</option>
+           <!-- <div class="grid gap-3">
+            <Label for="name-1">Contact</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.phone" />
+             <p v-if="$page.props.errors.phone" class="text-red-600 text-sm">{{ $page.props.errors.phone }}</p>
+          </div> -->
+           <!-- <div class="grid gap-3">
+            <Label for="name-1">Email</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.email" />
+             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+          </div> -->
+          <div class="grid gap-3">
+            <Label for="name-1">Catagory</Label>
+             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>Security</option>
+                 <option value="" selected>Bookshop</option>
+                  <option value="" selected>Electronic</option>
             </select>
-        </div>
-           <div class="grid gap-3">
-             <Label for="name-1">Select Type</Label>
-            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>-- Choose category --</option>
-            </select>
-        </div>
-
-
-
+             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+          </div>
+           <!-- <div class="grid gap-3">
+            <Label for="name-1">Address</Label>
+                <textarea rows="7" v-model="form.address"></textarea>
+                 <p v-if="$page.props.errors.address" class="text-red-600 text-sm">{{ $page.props.errors.address }}</p>
+          </div> -->
                <div class="grid gap-3">
              <Label for="name-1">Select Client</Label>
             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>-- Choose category --</option>
+                <option value="" selected>Dycom Patrols</option>
+                <option value="" selected>Elsburg security</option>
             </select>
         </div>
-
-
-
+                 <div class="grid gap-3">
+             <Label for="name-1">Type</Label>
+            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="" selected>Listen Only</option>
+                <option value="" selected>Listen/speak</option>
+            </select>
         </div>
-        <DialogFooter>
-          <DialogClose as-child>
-            <Button variant="outline">
+          <div class="flex items-end w-max">
+            <button type="button" @click="closeModal" class="cancel-btn mr-3">
               Cancel
-            </Button>
-          </DialogClose>
-          <Button type="submit">
+            </button>
+          <button type="submit" class="save-btn">
             Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          </button>
+          </div>
+        </div>
+             </div>
+         </div>
+      </div>
     </form>
-  </Dialog>
 
       </div>
     </div>
@@ -253,7 +275,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         </tr>
       </thead>
       <!-- <tbody>
-        <tr>
+        <tr v-for="channel in channels.data" :key="channel.id>
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex items-center gap-3">
               <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-3.jpg"

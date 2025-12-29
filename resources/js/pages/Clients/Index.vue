@@ -84,7 +84,7 @@ const visit = (url) => {
          <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-25">
             <!-- Modal Content -->
              <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-                <h2 class="text-heading">Add Client</h2>
+                <h2 class="text-heading">Create new Client</h2>
 
                 <div class="grid gap-4">
           <div class="grid gap-3">
