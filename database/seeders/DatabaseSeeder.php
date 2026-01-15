@@ -32,19 +32,19 @@ class DatabaseSeeder extends Seeder
         //     'address' => 'germiston',
         // ]);
         //      Channel::create([
-        //     'client_id' => '1212',
-        //     'name' => 'Dycom Channel',
+        //     'client_id' => 4,
+        //     'name' => 'Dycom4 Channel',
         //     'category' => 'Securty',
         //     'type' => 'listen',
         // ]);
-                Employee::create([
-        'first_name' => 'John',
+        Employee::create([
+        'first_name' => 'abram',
         'last_name' => 'blessed',
-        'email' => 'John@gmail.com',
-        'phone' => '01223456789',
+        'email' => 'abram@gmail.com',
+        'phone' => '01223456788',
         'occupation' => 'Developer',
-        'client_id' => 'Dycom patrols',
-        'channel_id' => 'Dycom'
+        'client_id' => 4,
+        'channel_id' => 4
 
         ]);
     }

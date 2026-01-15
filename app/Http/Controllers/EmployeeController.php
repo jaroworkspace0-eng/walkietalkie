@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,10 +15,20 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        $employee = Employee::paginate(10);
+        // $employee = Employee::paginate(10);
 
-          return Inertia::render('employees/index', [
-            'employee' => $employee
+        //   return Inertia::render('employees/index', [
+        //     'employees' => $employee
+        // ]);
+
+        $employee = Employee::all();
+        $employee->load('channel');
+        $employee->load('client');
+
+        // return EmployeeResource::collection($employee);
+
+         return Inertia::render('employees/index', [
+            'employees' => EmployeeResource::collection($employee)
         ]);
     }
 
