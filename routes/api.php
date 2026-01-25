@@ -15,4 +15,5 @@ Route::get('/user', function (Request $request) {
 Route::resource("employees", EmployeeController::class);
 Route::resource('clients', ClientController::class);
 Route::resource('channels', ChannelController::class);
+Route::get('clients/list', [ClientController::class, 'clients']);
 

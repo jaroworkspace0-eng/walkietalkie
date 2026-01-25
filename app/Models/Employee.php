@@ -10,12 +10,7 @@ class Employee extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'first_name', 
-        'last_name', 
-        'email',
-        'phone',
-        'occupation',
-        'client_id',
+        'user_id',
         'channel_id'
     ];
 
@@ -26,5 +21,9 @@ class Employee extends Model
 
     public function channel() {
         return $this->belongsTo(Channel::class);
+    }
+
+    public function user() {
+        return $this->belongsTo(User::class);
     }
 }
