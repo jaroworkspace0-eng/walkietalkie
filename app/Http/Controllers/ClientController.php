@@ -14,9 +14,10 @@ class ClientController extends Controller
      */
     public function index()
     {
-        $clients = Client::paginate(10);
+        $clients = Client::orderBy('created_at', 'desc')->paginate(10);
+        // return $clients;
 
-          return Inertia::render('Clients.index', [
+          return Inertia::render('Clients/Index', [
             'clients' => $clients
         ]);
 
@@ -40,15 +41,12 @@ class ClientController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:clients,email',
             'phone' => 'required|string',
-            'role' => 'required|string',
             'address' => 'required|string',
-            'occupation' => 'required|string'
         ]);
 
         Client::create($validated);
-        
-        return redirect()->route('clients.index')
-            ->with('success', 'Client created successfully!');
+
+        return redirect()->back()->with('success', 'Client created successfully!');
     }
 
     /**
@@ -85,7 +83,7 @@ class ClientController extends Controller
         ]);
 
         $client->update($validated);
-        
+
         return redirect()->route('clients.index')
             ->with('success', 'Client updated successfully!');
 

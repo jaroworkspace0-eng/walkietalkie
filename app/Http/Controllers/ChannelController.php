@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ChannelResource;
 use App\Models\Channel;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,10 +14,13 @@ class ChannelController extends Controller
      */
     public function index()
     {
-        $channel = Channel::paginate(10);
+        $channel = Channel::all();
+        $channel->load('client');
 
-         return Inertia::render('channels.index', [
-            'channels' => $channel
+        // return ChannelResource::collection($channel);
+
+         return Inertia::render('Channels/index', [
+            'channels' => ChannelResource::collection($channel)
         ]);
     }
 
