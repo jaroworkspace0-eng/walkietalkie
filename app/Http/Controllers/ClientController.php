@@ -23,6 +23,11 @@ class ClientController extends Controller
 
     }
 
+    public function clients() {
+        dd('testing');
+        // return new ClientResource(Client::all());
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -54,7 +59,7 @@ class ClientController extends Controller
      */
     public function show(string $id)
     {
-        //
+        return Client::all();
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -21,9 +22,10 @@ class EmployeeController extends Controller
         //     'employees' => $employee
         // ]);
 
-        $employee = Employee::all();
+        $employee = Employee::orderBy('created_at', 'desc')->get();
         $employee->load('channel');
         $employee->load('client');
+        $employee->load('user');
 
         // return EmployeeResource::collection($employee);
 
@@ -47,19 +49,27 @@ class EmployeeController extends Controller
     {
 
         $validated = $request->validate([
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'email' => 'required|email|max:250|unique:employees,email',
+            'name' => 'required|string',
+            'email' => 'required|email|max:250|unique:users,email',
             'phone' => 'required|string|max:15',
             'occupation' => 'required|string',
-            'client_id' => 'required|exists:clients,id',
-            'channel_id' => 'required|exists:channels,id',
+            'role' => 'employee',
+            'password' => 'required|string|min:8',
         ]);
 
-        Employee::create($validated);
+        $user = User::create($validated);
 
-        return redirect()->route('clients.index')
-            ->with('success', 'Employee created successfully!');
+        if($user) {
+            $data = [
+                'user_id' => $user->id,
+                'channel_id' => $request->channel_id,
+            ];
+            Employee::create($data);
+             return redirect()->back()->with('success', 'Employee created successfully!');
+
+        }
+         return redirect()->back()->with('error', 'Failed to create employee.');
+
     }
 
     /**

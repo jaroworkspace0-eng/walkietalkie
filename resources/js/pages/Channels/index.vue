@@ -3,14 +3,22 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import '../../../css/style.css';
 
 // import { type BreadcrumbItem } from '@/types';
-import { Link, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { ref } from 'vue';
-import { Button } from '@/components/ui/button'
+import axios from 'axios';
 
 
 
 
 const showModal = ref(false);
+const clients = ref([]);
+
+const handleClients = async () => {
+const response = await axios.get('api/clients/show');
+clients.value = response.data;
+console.log(clients.value);
+}
+handleClients();
 
 const openModal = () => {
     showModal.value = true;
@@ -40,22 +48,23 @@ const createChannel = () => {
     onSuccess: () => {
       resetForm();
       showModal.value = false;
+      console.log('Channel created successfully');
     }
   });
 }
 
 function resetForm() {
   form.value = {
-    client_id: '',
+    // client_id: '',
     name: '',
     category: '',
-    type: '',
+    // type: '',
   }
 }
 
-const visit = (url) => {
-  router.visit(url);
-}
+// const visit = (url) => {
+//   router.visit(url);
+// }
 </script>
 
 <template>
@@ -65,7 +74,7 @@ const visit = (url) => {
            <div class="relative flex flex-col w-full h-full text-gray-700 bg-white shadow-md rounded-xl bg-clip-border">
   <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border">
     <div class="flex items-center justify-between gap-8 mb-8">
-      <div>chan
+      <div>
         <p class="block mt-1 font-sans text-base antialiased font-normal leading-relaxed text-gray-700">
           See information about all Channel
         </p>
@@ -103,12 +112,9 @@ const visit = (url) => {
              <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
           </div> -->
           <div class="grid gap-3">
-            <Label for="name-1">Catagory</Label>
-             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Security</option>
-                 <option value="" selected>Bookshop</option>
-                  <option value="" selected>Electronic</option>
-            </select>
+            <Label for="name-1">Category</Label>
+             <input id="name-1" default-value="Pedro Duarte" v-model="form.category" />
+            <p v-if="$page.props.errors.category" class="text-red-600 text-sm">{{ $page.props.errors.category }}</p>
 
           </div>
            <!-- <div class="grid gap-3">
@@ -118,17 +124,20 @@ const visit = (url) => {
           </div> -->
                <div class="grid gap-3">
              <Label for="name-1">Select Client</Label>
-            <select id="post-client" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Dycom Patrols</option>
-                <option value="" selected>Elsburg security</option>
+            <select id="post-client" v-model="form.client_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option v-for="client in clients" :key="client.id" :value="client.id">{{ client.name }}</option>
             </select>
+            <p v-if="$page.props.errors.client_id" class="text-red-600 text-sm">{{ $page.props.errors.client_id }}</p>
+
         </div>
                  <div class="grid gap-3">
              <Label for="name-1">Type</Label>
-            <select id="post-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Listen Only</option>
-                <option value="" selected>Listen/speak</option>
+            <select v-model="form.type" id="post-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option value="listen" selected>Listen Only</option>
+                <option value="listen_and_speak" selected>Listen & speak</option>
             </select>
+            <p v-if="$page.props.errors.type" class="text-red-600 text-sm">{{ $page.props.errors.type }}</p>
+
         </div>
           <div class="flex items-end w-max">
             <button type="button" @click="closeModal" class="cancel-btn mr-3">
@@ -202,6 +211,11 @@ const visit = (url) => {
 
 
   <div class="p-6 px-0 overflow-scroll">
+    <div class="pl-4 pr-4 pt-4 pb-0">
+  <div v-if="$page.props.flash && $page.props.flash.success" class="bg-green-100 text-green-800 p-2 rounded mb-4">
+    {{ $page.props.flash.success }}
+  </div>
+  </div>
     <table class="w-full mt-4 text-left table-auto min-w-max">
       <thead>
         <tr>
@@ -283,8 +297,7 @@ const visit = (url) => {
         <tr v-for="channel in channels.data" :key="channel.id">
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex items-center gap-3">
-              <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-3.jpg"
-                alt="John Michael" class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
+
               <div class="flex flex-col">
                 <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
 

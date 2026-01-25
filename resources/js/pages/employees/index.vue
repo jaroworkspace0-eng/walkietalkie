@@ -4,9 +4,16 @@ import '../../../css/style.css';
 import { Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button'
+import axios from 'axios';
 
 const showModal = ref(false);
-
+const channels = ref([]);
+const handleChannels = async () => {
+const response = await axios.get('api/channels/show');
+channels.value = response.data;
+console.log(channels.value);
+}
+handleChannels();
 const openModal = () => {
     showModal.value = true;
 }
@@ -23,17 +30,17 @@ defineProps({
 })
 
 const form = ref({
-    first_name: '',
-    last_name: '',
+    name: '',
     email: '',
     phone: '',
     occupation:'',
-    client_id:'',
     channel_id:'',
+    password:'',
+    employee: 'employee',
 })
 
 const createEmployee = () => {
-  router.post('/employee', form.value, {
+  router.post('/employees', form.value, {
     onSuccess: () => {
       resetForm();
       showModal.value = false;
@@ -43,22 +50,21 @@ const createEmployee = () => {
 
 function resetForm() {
   form.value = {
-    first_name: '',
-    last_name: '',
+    name: '',
     email: '',
     phone: '',
     occupation:'',
-    client_id:'',
-    channel_id:'',
+    password:'',
+
 
   }
 }
 
 
 
-const visit = (url) => {
-  router.visit(url);
-}
+// const visit = (url) => {
+//   router.visit(url);
+// }
 
 
 </script>
@@ -107,20 +113,23 @@ const visit = (url) => {
                     </div> -->
 
           <div class="grid gap-3">
-            <Label for="name-1">Name </Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.first_name" />
-            <p v-if="$page.props.errors.first_name" class="text-red-600 text-sm">{{ $page.props.errors.first_name }}</p>
+            <Label for="name-1">Name</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
+            <p v-if="$page.props.errors.name" class="text-red-600 text-sm">{{ $page.props.errors.name }}</p>
           </div>
           <div class="grid gap-3">
-            <Label for="name-1">Occupation</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.last_name" />
-            <p v-if="$page.props.errors.last_name" class="text-red-600 text-sm">{{ $page.props.errors.last_name }}</p>
-          </div>
-          <div class="grid gap-3">
-            <Label for="name-1">Status</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.emaail" />
+            <Label for="name-1">Email</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.email" />
             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
           </div>
+
+            <div class="grid gap-3">
+            <Label for="name-1">Password</Label>
+            <input id="name-1" default-value="Pedro Duarte" v-model="form.password" />
+            <p v-if="$page.props.errors.password" class="text-red-600 text-sm">{{ $page.props.errors.password }}</p>
+          </div>
+
+
           <div class="grid gap-3">
             <Label for="name-1">Contact </Label>
             <input id="name-1" default-value="Pedro Duarte" v-model="form.phone" />
@@ -131,6 +140,7 @@ const visit = (url) => {
             <input id="name-1" default-value="Pedro Duarte" v-model="form.occupation" />
             <p v-if="$page.props.errors.occupation" class="text-red-600 text-sm">{{ $page.props.errors.occupation }}</p>
           </div>
+          <input type="hidden" :v-model="form.employee">
 
            <!-- <div class="grid gap-3">
             <Label for="name-1">Contact</Label>
@@ -144,25 +154,18 @@ const visit = (url) => {
           </div> -->
           <div class="grid gap-3">
             <Label for="name-1">Select Channel</Label>
-             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Security</option>
-                 <option value="" selected>Bookshop</option>
-                  <option value="" selected>Electronic</option>
+             <select v-model="form.channel_id" id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                <option v-for="channel in channels" :key="channel.id" :value="channel.id" selected>{{ channel.name }}</option>
+
             </select>
-             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+             <p v-if="$page.props.errors.name" class="text-red-600 text-sm">{{ $page.props.errors.name }}</p>
           </div>
            <!-- <div class="grid gap-3">
             <Label for="name-1">Address</Label>
                 <textarea rows="7" v-model="form.address"></textarea>
                  <p v-if="$page.props.errors.address" class="text-red-600 text-sm">{{ $page.props.errors.address }}</p>
           </div> -->
-               <div class="grid gap-3">
-             <Label for="name-1">Select Client</Label>
-            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Dycom Patrols</option>
-                <option value="" selected>Elsburg security</option>
-            </select>
-        </div>
+
                  <!-- <div class="grid gap-3">
              <Label for="name-1">Type</Label>
             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
@@ -318,6 +321,11 @@ const visit = (url) => {
 
 
   <div class="p-6 px-0 overflow-scroll">
+     <div class="pl-4 pr-4 pt-4 pb-0">
+  <div v-if="$page.props.flash && $page.props.flash.success" class="bg-green-100 text-green-800 p-2 rounded mb-4">
+    {{ $page.props.flash.success }}
+  </div>
+  </div>
     <table class="w-full mt-4 text-left table-auto min-w-max">
       <thead>
         <tr>
@@ -373,7 +381,7 @@ const visit = (url) => {
             class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
             <p
               class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Client & Channel
+              Channel & Client
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" aria-hidden="true" class="w-4 h-4">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -405,25 +413,21 @@ const visit = (url) => {
       </thead>
        <tbody>
         <tr v-for="employee in employees.data" :key="employee.id">
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex items-center gap-3">
-              <img src="https://demos.creative-tim.com/test/corporate-ui-dashboard/assets/img/team-3.jpg"
-                alt="John Michael" class="relative inline-block h-9 w-9 !rounded-full object-cover object-center" />
+             <td class="p-4 border-b border-blue-gray-50">
               <div class="flex flex-col">
                 <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  {{ employee.first_name }}  {{ employee.last_name }}
+                  {{ employee.user.name }}
                 </p>
                 <p
                   class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  {{ employee.email }}
+                  {{ employee.user.email }}
                 </p>
               </div>
-            </div>
           </td>
           <td class="p-4 border-b border-blue-gray-50">
             <div class="flex flex-col">
               <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                {{ employee.occupation }}
+                {{ employee.user.occupation }}
               </p>
             </div>
           </td>
@@ -431,13 +435,13 @@ const visit = (url) => {
             <div class="w-max">
               <div
                 class="relative grid items-center px-2 py-1 font-sans text-xs font-bold text-green-900 uppercase rounded-md select-none whitespace-nowrap bg-green-500/20">
-                <span class=""> {{ employee.status }}</span>
+                <span class=""> {{ employee.user.status }}</span>
               </div>
             </div>
           </td>
           <td class="p-4 border-b border-blue-gray-50">
             <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-               {{ employee.phone }}
+               {{ employee.user.phone }}
             </p>
           </td>
             <td class="p-4 border-b border-blue-gray-50">

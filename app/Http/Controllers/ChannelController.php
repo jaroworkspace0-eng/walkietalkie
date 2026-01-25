@@ -46,8 +46,7 @@ class ChannelController extends Controller
 
         Channel::create($validated);
 
-        return redirect()->route('channels.index')
-            ->with('success', 'Channel created successfully!');
+        return redirect()->back()->with('success', 'Channel created successfully!');
     }
 
     /**
@@ -55,7 +54,7 @@ class ChannelController extends Controller
      */
     public function show(string $id)
     {
-        //
+           return Channel::all();
     }
 
     /**
