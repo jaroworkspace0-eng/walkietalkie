@@ -37,15 +37,15 @@ class DatabaseSeeder extends Seeder
         //     'category' => 'Securty',
         //     'type' => 'listen',
         // ]);
-        Employee::create([
-        'first_name' => 'abram',
-        'last_name' => 'blessed',
-        'email' => 'abram@gmail.com',
-        'phone' => '01223456788',
-        'occupation' => 'Developer',
-        'client_id' => 4,
-        'channel_id' => 4
+        // Employee::create([
+        // 'first_name' => 'abram',
+        // 'last_name' => 'blessed',
+        // 'email' => 'abram@gmail.com',
+        // 'phone' => '01223456788',
+        // 'occupation' => 'Developer',
+        // 'client_id' => 4,
+        // 'channel_id' => 4
 
-        ]);
+        // ]);
     }
 }
