@@ -45,7 +45,7 @@ onMounted(() => {
 // 2. Fetch Data (If not using Inertia props for these)
 const handleChannels = async () => {
     try {
-        const response = await axios.get('api/channels/show');
+        const response = await axios.get('api/v1/channels/show');
         channels.value = response.data;
     } catch (e) {
         console.error('Error fetching channels', e);
@@ -54,7 +54,7 @@ const handleChannels = async () => {
 
 const handleClients = async () => {
     try {
-        const response = await axios.get('api/clients/show');
+        const response = await axios.get('api/v1/clients/show');
         clients.value = response.data;
     } catch (e) {
         console.error('Error fetching clients', e);
@@ -207,11 +207,11 @@ const toggleStatus = (employee) => {
                                                 class="grid grid-cols-1 gap-4 md:grid-cols-2"
                                             >
                                                 <div class="grid gap-2">
-                                                    <Label for="name-1"
+                                                    <Label for="name"
                                                         >Name</Label
                                                     >
                                                     <input
-                                                        id="name-1"
+                                                        id="name"
                                                         default-value="Pedro Duarte"
                                                         v-model="form.name"
                                                     />
@@ -229,11 +229,11 @@ const toggleStatus = (employee) => {
                                                     </p>
                                                 </div>
                                                 <div class="grid gap-2">
-                                                    <Label for="name-1"
+                                                    <Label for="email"
                                                         >Email</Label
                                                     >
                                                     <input
-                                                        id="name-1"
+                                                        id="email"
                                                         default-value="Pedro Duarte"
                                                         v-model="form.email"
                                                     />
@@ -256,11 +256,11 @@ const toggleStatus = (employee) => {
                                                 class="grid grid-cols-1 gap-4 md:grid-cols-2"
                                             >
                                                 <div class="grid gap-2">
-                                                    <Label for="name-1"
+                                                    <Label for="contact"
                                                         >Contact
                                                     </Label>
                                                     <input
-                                                        id="name-1"
+                                                        id="contact"
                                                         default-value="Pedro Duarte"
                                                         v-model="form.phone"
                                                     />
@@ -278,11 +278,11 @@ const toggleStatus = (employee) => {
                                                     </p>
                                                 </div>
                                                 <div class="grid gap-2">
-                                                    <Label for="name-1"
+                                                    <Label for="role"
                                                         >Role / Occupation
                                                     </Label>
                                                     <input
-                                                        id="name-1"
+                                                        id="role"
                                                         default-value="Pedro Duarte"
                                                         v-model="
                                                             form.occupation
@@ -307,11 +307,11 @@ const toggleStatus = (employee) => {
                                                 :v-model="form.employee"
                                             />
                                             <div class="grid gap-2">
-                                                <Label for="name-1"
+                                                <Label for="clients"
                                                     >Select Client</Label
                                                 >
                                                 <select
-                                                    id="post-client"
+                                                    id="clients"
                                                     v-model="form.client_id"
                                                     @change="handleClientChange"
                                                     class="focus:ring-opacity-50 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
@@ -339,12 +339,12 @@ const toggleStatus = (employee) => {
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
-                                                <Label for="name-1"
+                                                <Label for="channels"
                                                     >Select Channel
                                                 </Label>
                                                 <select
                                                     v-model="form.channel_id"
-                                                    id="post-category"
+                                                    id="channels"
                                                     class="focus:ring-opacity-50 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                                                 >
                                                     <option value="" disabled>
@@ -372,11 +372,11 @@ const toggleStatus = (employee) => {
                                             </div>
 
                                             <div class="grid gap-3">
-                                                <Label for="name-1"
+                                                <Label for="password"
                                                     >Set Password</Label
                                                 >
                                                 <input
-                                                    id="name-1"
+                                                    id="password"
                                                     default-value="Pedro Duarte"
                                                     v-model="form.password"
                                                 />
@@ -477,6 +477,18 @@ const toggleStatus = (employee) => {
                         </tr>
                     </thead>
                     <tbody>
+                        <tr
+                            v-if="
+                                !employees.data || employees.data.length === 0
+                            "
+                        >
+                            <td
+                                colspan="9"
+                                class="p-4 text-center text-gray-500"
+                            >
+                                No employees found.
+                            </td>
+                        </tr>
                         <tr
                             v-for="employee in employees.data"
                             :key="employee.id"

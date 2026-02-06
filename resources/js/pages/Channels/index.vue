@@ -19,7 +19,7 @@ const confirmationName = ref(''); // Stores what the user types
 const deleteForm = useForm({});
 
 const handleClients = async () => {
-    const response = await axios.get('api/clients/show');
+    const response = await axios.get('api/v1/clients/show');
     clients.value = response.data;
     console.log(clients.value);
 };
@@ -401,6 +401,14 @@ const confirmDelete = (channel) => {
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-if="!channels.data || channels.data.length === 0">
+                            <td
+                                colspan="9"
+                                class="p-4 text-center text-gray-500"
+                            >
+                                No channles found.
+                            </td>
+                        </tr>
                         <tr
                             v-for="channel in channels.data"
                             :key="channel.id"
