@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ChannelResource;
 use App\Models\Channel;
+use App\Models\Client;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,18 +13,28 @@ class ChannelController extends Controller
     /**
      * Display a listing of the resource.
      */
+    // public function index()
+    // {
+    //     $channel = Channel::all();
+    //     $channel->load('client');
+
+    //     // return ChannelResource::collection($channel);
+
+    //      return Inertia::render('Channels/index', [
+    //         'channels' => ChannelResource::collection($channel)
+    //     ]);
+    // }
     public function index()
     {
-        $channel = Channel::all();
-        $channel->load('client');
+        $channels = Channel::with('client') 
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(10); 
 
-        // return ChannelResource::collection($channel);
-
-         return Inertia::render('Channels/index', [
-            'channels' => ChannelResource::collection($channel)
+        return Inertia::render('Channels/index', [
+            // This keeps the structure flat: channels.data, channels.links, channels.from
+            'channels' => $channels 
         ]);
     }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -54,7 +65,7 @@ class ChannelController extends Controller
      */
     public function show(string $id)
     {
-           return Channel::all();
+           return Channel::where('is_active', 1)->get();
     }
 
     /**
@@ -62,8 +73,11 @@ class ChannelController extends Controller
      */
     public function edit(Channel $channel)
     {
-        // $channel->load('channel');
-        return Inertia::render('channel.index', ['channel' => $channel->toArray()]);
+        // If you are using a separate edit page
+        return Inertia::render('Channels/Edit', [
+            'channel' => $channel->load('client'),
+            'clients' => Client::all()
+        ]);
     }
 
     /**
@@ -72,18 +86,15 @@ class ChannelController extends Controller
     public function update(Request $request, Channel $channel)
     {
         $validated = $request->validate([
-            'name' => 'required|string',
-            'category' => 'required|string',
-            'type' => 'required|string',
+            'name' => 'required|string|max:255',
             'client_id' => 'required|exists:clients,id',
+            'category' => 'required',
+            'type' => 'required',
         ]);
 
         $channel->update($validated);
 
-        return redirect()->route('channels.index')
-            ->with('success', 'Channel updated successfully!');
-
-
+        return redirect()->back()->with('success', 'Channel updated successful.');
     }
 
     /**
@@ -93,7 +104,17 @@ class ChannelController extends Controller
     {
         $channel->delete();
 
-        return redirect()->route('channels.index')
-            ->with('success', 'Channel deleted successfully!');
+            return redirect()->back()->with('success', 'Channel deleted successfully.');
+    }
+
+    public function toggleStatus(Channel $channel)
+    {
+        // Toggle 1 to 0 or 0 to 1
+        $channel->update([
+            'is_active' => !$channel->is_active
+        ]);
+
+        return redirect()->back()->with('success', 'Channels status updated successfully.');
+        
     }
 }

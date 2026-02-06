@@ -1,497 +1,688 @@
-<script setup >
+<script setup>
+import Label from '@/components/ui/label/Label.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import '../../../css/style.css';
-import { Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
-import { Button } from '@/components/ui/button'
+import { Head, Link, router, useForm } from '@inertiajs/vue3'; // useForm is better for validation errors
+import { useEcho } from '@laravel/echo-vue';
 import axios from 'axios';
+import { computed, onMounted, ref } from 'vue';
+import '../../../css/style.css';
 
+// 1. Data States
 const showModal = ref(false);
+const isEditing = ref(false);
 const channels = ref([]);
+const clients = ref([]);
+
+// const page = usePage();
+// // Access the logged-in user
+// const user = page.props.auth.user;
+// console.log('user:', user); // Should print your user object
+
+const echo = useEcho();
+
+const props = defineProps({
+    employees: { type: Object, required: true },
+    breadcrumbs: { type: Array, required: false, default: () => [] },
+});
+
+const employeesList = ref(props.employees.data);
+
+onMounted(() => {
+    const echoInstance = window.Echo;
+    if (!echoInstance) return console.error('Echo not ready ' + window.Echo);
+
+    echoInstance.private('status-updates').listen('UserStatusUpdated', (e) => {
+        console.log('Event received!', e);
+        const employee = employeesList.value.find(
+            (emp) => emp.user.id === e.userId,
+        );
+        if (employee) {
+            employee.user.status = e.status;
+        }
+    });
+});
+
+// 2. Fetch Data (If not using Inertia props for these)
 const handleChannels = async () => {
-const response = await axios.get('api/channels/show');
-channels.value = response.data;
-console.log(channels.value);
-}
+    try {
+        const response = await axios.get('api/channels/show');
+        channels.value = response.data;
+    } catch (e) {
+        console.error('Error fetching channels', e);
+    }
+};
+
+const handleClients = async () => {
+    try {
+        const response = await axios.get('api/clients/show');
+        clients.value = response.data;
+    } catch (e) {
+        console.error('Error fetching clients', e);
+    }
+};
+
+handleClients();
 handleChannels();
+
+// 4. Form Initialization (using useForm for better Inertia integration)
+const form = useForm({
+    id: null,
+    name: '',
+    email: '',
+    phone: '',
+    occupation: '',
+    channel_id: '',
+    client_id: '',
+    password: '',
+    role: 'employee',
+});
+
+// 5. THE FIX: Filter the local 'channels' ref, not 'props.channels'
+const filteredChannels = computed(() => {
+    if (!form.client_id) return [];
+
+    // Filter the channels fetched via axios
+    return channels.value.filter(
+        (channel) => channel.client_id == form.client_id,
+    );
+});
+
+// 6. Modal Logic
 const openModal = () => {
+    isEditing.value = false;
+    form.reset();
     showModal.value = true;
-}
+};
+
+const editEmployee = (employee) => {
+    isEditing.value = true;
+    form.id = employee.id;
+    form.name = employee.user.name;
+    form.email = employee.user.email;
+    form.phone = employee.user.phone;
+    form.occupation = employee.user.occupation;
+    form.client_id = employee.client_id;
+    // Pre-select the first channel the employee belongs to
+    form.channel_id = employee.channel?.[0]?.id || '';
+    showModal.value = true;
+};
 
 const closeModal = () => {
     showModal.value = false;
-}
+    form.reset();
+};
 
-defineProps({
-  employees: {
-    type: Object,
-    required: true,
-  },
-})
-
-const form = ref({
-    name: '',
-    email: '',
-    phone: '',
-    occupation:'',
-    channel_id:'',
-    password:'',
-    employee: 'employee',
-})
-
-const createEmployee = () => {
-  router.post('/employees', form.value, {
-    onSuccess: () => {
-      resetForm();
-      showModal.value = false;
+// 7. CRUD Actions
+const submitEmployee = () => {
+    if (isEditing.value) {
+        form.put(`/employees/${form.id}`, {
+            onSuccess: () => closeModal(),
+        });
+    } else {
+        form.post('/employees', {
+            onSuccess: () => closeModal(),
+        });
     }
-  });
-}
+};
 
-function resetForm() {
-  form.value = {
-    name: '',
-    email: '',
-    phone: '',
-    occupation:'',
-    password:'',
+// Delete Logic
+const showDeleteModal = ref(false);
+const employeeToDelete = ref(null);
 
+const confirmDelete = (id) => {
+    employeeToDelete.value = id;
+    showDeleteModal.value = true;
+};
 
-  }
-}
+const executeDelete = () => {
+    router.delete(`/employees/${employeeToDelete.value}`, {
+        onSuccess: () => {
+            showDeleteModal.value = false;
+            employeeToDelete.value = null;
+        },
+    });
+};
 
-
-
-// const visit = (url) => {
-//   router.visit(url);
-// }
-
-
+const toggleStatus = (employee) => {
+    // Optimistic UI update or wait for Inertia
+    router.patch(
+        `/users/${employee.user_id}/toggle-status`,
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Optional: Toast notification for "Status Updated"
+            },
+        },
+    );
+};
 </script>
 
 <template>
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="relative flex flex-col w-full h-full text-gray-700 bg-white shadow-md rounded-xl bg-clip-border">
-  <div class="relative mx-4 mt-4 overflow-hidden text-gray-700 bg-white rounded-none bg-clip-border">
-    <div class="flex items-center justify-between gap-8 mb-8">
-      <div>
+        <div
+            class="relative flex h-full w-full flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-md"
+        >
+            <div
+                class="relative mx-4 mt-4 overflow-hidden rounded-none bg-white bg-clip-border text-gray-700"
+            >
+                <div class="mb-8 flex items-center justify-between gap-8">
+                    <div>
+                        <p
+                            class="mt-1 block font-sans text-base leading-relaxed font-normal text-gray-700 antialiased"
+                        >
+                            Employees
+                        </p>
+                    </div>
+                    <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        <button
+                            class="rounded-lg border border-gray-900 px-4 py-2 text-center align-middle font-sans text-xs font-bold text-gray-900 uppercase transition-all select-none hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                            type="button"
+                            @click="openModal"
+                        >
+                            Add Employee
+                        </button>
+                        <form @submit.prevent="submitEmployee()">
+                            <div v-if="showModal">
+                                <!-- Overlaying -->
+                                <div
+                                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
+                                >
+                                    <!-- Modal Content -->
+                                    <div
+                                        class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg"
+                                    >
+                                        <h2 class="text-heading">
+                                            {{
+                                                isEditing
+                                                    ? 'Edit Employee'
+                                                    : 'Add Employee'
+                                            }}
+                                        </h2>
 
-        <p class="block mt-1 font-sans text-base antialiased font-normal leading-relaxed text-gray-700">
-          See information about all users
-        </p>
-      </div>
-         <div class="flex flex-col gap-2 shrink-0 sm:flex-row">
-        <button
-          class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button"
-          @click="openModal">
-          Add User
-        </button>
-         <form @submit.prevent="createEmployee()">
+                                        <div class="grid gap-4">
+                                            <div
+                                                class="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <Label for="name-1"
+                                                        >Name</Label
+                                                    >
+                                                    <input
+                                                        id="name-1"
+                                                        default-value="Pedro Duarte"
+                                                        v-model="form.name"
+                                                    />
+                                                    <p
+                                                        v-if="
+                                                            $page.props.errors
+                                                                .name
+                                                        "
+                                                        class="text-sm text-red-600"
+                                                    >
+                                                        {{
+                                                            $page.props.errors
+                                                                .name
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <Label for="name-1"
+                                                        >Email</Label
+                                                    >
+                                                    <input
+                                                        id="name-1"
+                                                        default-value="Pedro Duarte"
+                                                        v-model="form.email"
+                                                    />
+                                                    <p
+                                                        v-if="
+                                                            $page.props.errors
+                                                                .email
+                                                        "
+                                                        class="text-sm text-red-600"
+                                                    >
+                                                        {{
+                                                            $page.props.errors
+                                                                .email
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
 
-      <div v-if="showModal">
-        <!-- Overlaying -->
-         <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-600 bg-opacity-25">
-            <!-- Modal Content -->
-             <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-                <h2 class="text-heading">Create New User</h2>
+                                            <div
+                                                class="grid grid-cols-1 gap-4 md:grid-cols-2"
+                                            >
+                                                <div class="grid gap-2">
+                                                    <Label for="name-1"
+                                                        >Contact
+                                                    </Label>
+                                                    <input
+                                                        id="name-1"
+                                                        default-value="Pedro Duarte"
+                                                        v-model="form.phone"
+                                                    />
+                                                    <p
+                                                        v-if="
+                                                            $page.props.errors
+                                                                .phone
+                                                        "
+                                                        class="text-sm text-red-600"
+                                                    >
+                                                        {{
+                                                            $page.props.errors
+                                                                .phone
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <div class="grid gap-2">
+                                                    <Label for="name-1"
+                                                        >Role / Occupation
+                                                    </Label>
+                                                    <input
+                                                        id="name-1"
+                                                        default-value="Pedro Duarte"
+                                                        v-model="
+                                                            form.occupation
+                                                        "
+                                                    />
+                                                    <p
+                                                        v-if="
+                                                            $page.props.errors
+                                                                .occupation
+                                                        "
+                                                        class="text-sm text-red-600"
+                                                    >
+                                                        {{
+                                                            $page.props.errors
+                                                                .occupation
+                                                        }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="hidden"
+                                                :v-model="form.employee"
+                                            />
+                                            <div class="grid gap-2">
+                                                <Label for="name-1"
+                                                    >Select Client</Label
+                                                >
+                                                <select
+                                                    id="post-client"
+                                                    v-model="form.client_id"
+                                                    @change="handleClientChange"
+                                                    class="focus:ring-opacity-50 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
+                                                >
+                                                    <option value="" disabled>
+                                                        -- Choose client --
+                                                    </option>
+                                                    <option
+                                                        v-for="client in clients"
+                                                        :key="client.id"
+                                                        :value="client.id"
+                                                    >
+                                                        {{ client.name }}
+                                                    </option>
+                                                </select>
+                                                <p
+                                                    v-if="
+                                                        $page.props.errors.name
+                                                    "
+                                                    class="text-sm text-red-600"
+                                                >
+                                                    {{
+                                                        $page.props.errors.name
+                                                    }}
+                                                </p>
+                                            </div>
+                                            <div class="grid gap-3">
+                                                <Label for="name-1"
+                                                    >Select Channel
+                                                </Label>
+                                                <select
+                                                    v-model="form.channel_id"
+                                                    id="post-category"
+                                                    class="focus:ring-opacity-50 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
+                                                >
+                                                    <option value="" disabled>
+                                                        -- Choose channel --
+                                                    </option>
+                                                    <option
+                                                        v-for="channel in filteredChannels"
+                                                        :key="channel.id"
+                                                        :value="channel.id"
+                                                        selected
+                                                    >
+                                                        {{ channel.name }}
+                                                    </option>
+                                                </select>
+                                                <p
+                                                    v-if="
+                                                        $page.props.errors.name
+                                                    "
+                                                    class="text-sm text-red-600"
+                                                >
+                                                    {{
+                                                        $page.props.errors.name
+                                                    }}
+                                                </p>
+                                            </div>
 
-                <div class="grid gap-4">
-                    <!-- <div class="grid grid-cols-2 gap-5">
-                         <div class="grid gap-3">
-            <Label for="name-1">Catagory</Label>
-             <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Security</option>
-                 <option value="" selected>Bookshop</option>
-                  <option value="" selected>Electronic</option>
-            </select>
-             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
+                                            <div class="grid gap-3">
+                                                <Label for="name-1"
+                                                    >Set Password</Label
+                                                >
+                                                <input
+                                                    id="name-1"
+                                                    default-value="Pedro Duarte"
+                                                    v-model="form.password"
+                                                />
+                                                <p
+                                                    v-if="
+                                                        $page.props.errors
+                                                            .password
+                                                    "
+                                                    class="text-sm text-red-600"
+                                                >
+                                                    {{
+                                                        $page.props.errors
+                                                            .password
+                                                    }}
+                                                </p>
+                                            </div>
 
-          </div>
-                    </div> -->
-
-          <div class="grid gap-3">
-            <Label for="name-1">Name</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.name" />
-            <p v-if="$page.props.errors.name" class="text-red-600 text-sm">{{ $page.props.errors.name }}</p>
-          </div>
-          <div class="grid gap-3">
-            <Label for="name-1">Email</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.email" />
-            <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
-          </div>
-
-            <div class="grid gap-3">
-            <Label for="name-1">Password</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.password" />
-            <p v-if="$page.props.errors.password" class="text-red-600 text-sm">{{ $page.props.errors.password }}</p>
-          </div>
-
-
-          <div class="grid gap-3">
-            <Label for="name-1">Contact </Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.phone" />
-            <p v-if="$page.props.errors.phone" class="text-red-600 text-sm">{{ $page.props.errors.phone }}</p>
-          </div>
-           <div class="grid gap-3">
-            <Label for="name-1">Occupation </Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.occupation" />
-            <p v-if="$page.props.errors.occupation" class="text-red-600 text-sm">{{ $page.props.errors.occupation }}</p>
-          </div>
-          <input type="hidden" :v-model="form.employee">
-
-           <!-- <div class="grid gap-3">
-            <Label for="name-1">Contact</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.phone" />
-             <p v-if="$page.props.errors.phone" class="text-red-600 text-sm">{{ $page.props.errors.phone }}</p>
-          </div> -->
-           <!-- <div class="grid gap-3">
-            <Label for="name-1">Email</Label>
-            <input id="name-1" default-value="Pedro Duarte" v-model="form.email" />
-             <p v-if="$page.props.errors.email" class="text-red-600 text-sm">{{ $page.props.errors.email }}</p>
-          </div> -->
-          <div class="grid gap-3">
-            <Label for="name-1">Select Channel</Label>
-             <select v-model="form.channel_id" id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option v-for="channel in channels" :key="channel.id" :value="channel.id" selected>{{ channel.name }}</option>
-
-            </select>
-             <p v-if="$page.props.errors.name" class="text-red-600 text-sm">{{ $page.props.errors.name }}</p>
-          </div>
-           <!-- <div class="grid gap-3">
-            <Label for="name-1">Address</Label>
-                <textarea rows="7" v-model="form.address"></textarea>
-                 <p v-if="$page.props.errors.address" class="text-red-600 text-sm">{{ $page.props.errors.address }}</p>
-          </div> -->
-
-                 <!-- <div class="grid gap-3">
-             <Label for="name-1">Type</Label>
-            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>Listen Only</option>
-                <option value="" selected>Listen/speak</option>
-            </select>
-        </div> -->
-          <div class="flex items-end w-max">
-            <button type="button" @click="closeModal" class="cancel-btn mr-3">
-              Cancel
-            </button>
-          <button type="submit" class="save-btn">
-            Save
-          </button>
-          </div>
-        </div>
-             </div>
-         </div>
-      </div>
-    </form>
-
-         <!-- <Dialog>
-    <form>
-      <DialogTrigger as-child>
-              <button
-          class="flex select-none items-center gap-3 rounded-lg bg-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-          type="button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-            stroke-width="2" class="w-4 h-4">
-            <path
-              d="M6.25 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM3.25 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM19.75 7.5a.75.75 0 00-1.5 0v2.25H16a.75.75 0 000 1.5h2.25v2.25a.75.75 0 001.5 0v-2.25H22a.75.75 0 000-1.5h-2.25V7.5z">
-            </path>
-          </svg>
-          Add user
-        </button>
-      </DialogTrigger>
-      <DialogContent class="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
-          <DialogDescription>
-            Fill User details
-          </DialogDescription>
-        </DialogHeader>
-        <div class="grid gap-4">
-          <div class="grid gap-3">
-            <Label for="name-1">First Name</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
-          </div>
-           <div class="grid gap-3">
-            <Label for="name-1">Last Name</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
-          </div>
-           <div class="grid gap-3">
-            <Label for="name-1">Email</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
-          </div>
-           <div class="grid gap-3">
-            <Label for="name-1">Email</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
-          </div>
-          <div class="grid gap-3">
-            <Label for="username-1">Contact Number</Label>
-            <Input id="username-1" name="username" default-value="@peduarte" />
-          </div>
-           <div class="grid gap-3">
-            <Label for="name-1">Role</Label>
-            <Input id="name-1" name="name" default-value="Pedro Duarte" />
-          </div>
-               <div class="grid gap-3">
-             <Label for="name-1">Select Client</Label>
-            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>-- Choose category --</option>
-            </select>
-        </div>
-              <div class="grid gap-3">
-             <Label for="name-1">Select Channel</Label>
-            <select id="post-category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
-                <option value="" selected>-- Choose category --</option>
-            </select>
-        </div>
-
-
-        </div>
-        <DialogFooter>
-          <DialogClose as-child>
-            <Button variant="outline">
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button type="submit">
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </form>
-  </Dialog> -->
-
-      </div>
-    </div>
-
-
-    <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
-      <div class="block w-full overflow-hidden md:w-max">
-        <nav>
-          <ul role="tablist" class="relative flex flex-row p-1 rounded-lg bg-blue-gray-50 bg-opacity-60">
-            <li role="tab"
-              class="relative flex items-center justify-center w-full h-full px-2 py-1 font-sans text-base antialiased font-normal leading-relaxed text-center bg-transparent cursor-pointer select-none text-blue-gray-900"
-              data-value="all">
-              <div class="z-20 text-inherit">
-                &nbsp;&nbsp;All&nbsp;&nbsp;
-              </div>
-              <div class="absolute inset-0 z-10 h-full bg-white rounded-md shadow"></div>
-            </li>
-            <li role="tab"
-              class="relative flex items-center justify-center w-full h-full px-2 py-1 font-sans text-base antialiased font-normal leading-relaxed text-center bg-transparent cursor-pointer select-none text-blue-gray-900"
-              data-value="monitored">
-              <div class="z-20 text-inherit">
-                &nbsp;&nbsp;Users&nbsp;&nbsp;
-              </div>
-            </li>
-            <li role="tab"
-              class="relative flex items-center justify-center w-full h-full px-2 py-1 font-sans text-base antialiased font-normal leading-relaxed text-center bg-transparent cursor-pointer select-none text-blue-gray-900"
-              data-value="unmonitored">
-              <div class="z-20 text-inherit">
-                &nbsp;&nbsp;Clients&nbsp;&nbsp;
-              </div>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      <div class="w-full md:w-72">
-        <div class="relative h-10 w-full min-w-[200px]">
-          <div class="absolute grid w-5 h-5 top-2/4 right-3 -translate-y-2/4 place-items-center text-blue-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-              stroke="currentColor" aria-hidden="true" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"></path>
-            </svg>
-          </div>
-          <input
-            class="peer h-full w-full rounded-[7px] border border-blue-gray-200 border-t-transparent bg-transparent px-3 py-2.5 !pr-9 font-sans text-sm font-normal text-blue-gray-700 outline outline-0 transition-all placeholder-shown:border placeholder-shown:border-blue-gray-200 placeholder-shown:border-t-blue-gray-200 focus:border-2 focus:border-gray-900 focus:border-t-transparent focus:outline-0 disabled:border-0 disabled:bg-blue-gray-50"
-            placeholder=" " />
-          <label
-            class="before:content[' '] after:content[' '] pointer-events-none absolute left-0 -top-1.5 flex h-full w-full select-none !overflow-visible truncate text-[11px] font-normal leading-tight text-gray-500 transition-all before:pointer-events-none before:mt-[6.5px] before:mr-1 before:box-border before:block before:h-1.5 before:w-2.5 before:rounded-tl-md before:border-t before:border-l before:border-blue-gray-200 before:transition-all after:pointer-events-none after:mt-[6.5px] after:ml-1 after:box-border after:block after:h-1.5 after:w-2.5 after:flex-grow after:rounded-tr-md after:border-t after:border-r after:border-blue-gray-200 after:transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[3.75] peer-placeholder-shown:text-blue-gray-500 peer-placeholder-shown:before:border-transparent peer-placeholder-shown:after:border-transparent peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-gray-900 peer-focus:before:border-t-2 peer-focus:before:border-l-2 peer-focus:before:!border-gray-900 peer-focus:after:border-t-2 peer-focus:after:border-r-2 peer-focus:after:!border-gray-900 peer-disabled:text-transparent peer-disabled:before:border-transparent peer-disabled:after:border-transparent peer-disabled:peer-placeholder-shown:text-blue-gray-500">
-            Search
-          </label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-
-
-  <div class="p-6 px-0 overflow-scroll">
-     <div class="pl-4 pr-4 pt-4 pb-0">
-  <div v-if="$page.props.flash && $page.props.flash.success" class="bg-green-100 text-green-800 p-2 rounded mb-4">
-    {{ $page.props.flash.success }}
-  </div>
-  </div>
-    <table class="w-full mt-4 text-left table-auto min-w-max">
-      <thead>
-        <tr>
-          <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Name
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-          <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Occupation
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-            <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Status
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-            <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Contacts
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-            <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Channel & Client
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-
-             <th
-
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-              Action
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                stroke="currentColor" aria-hidden="true" class="w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"></path>
-              </svg>
-            </p>
-          </th>
-          <th
-            class="p-4 transition-colors cursor-pointer border-y border-blue-gray-100 bg-blue-gray-50/50 hover:bg-blue-gray-50">
-            <p
-              class="flex items-center justify-between gap-2 font-sans text-sm antialiased font-normal leading-none text-blue-gray-900 opacity-70">
-            </p>
-          </th>
-        </tr>
-      </thead>
-       <tbody>
-        <tr v-for="employee in employees.data" :key="employee.id">
-             <td class="p-4 border-b border-blue-gray-50">
-              <div class="flex flex-col">
-                <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  {{ employee.user.name }}
-                </p>
-                <p
-                  class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  {{ employee.user.email }}
-                </p>
-              </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="flex flex-col">
-              <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                {{ employee.user.occupation }}
-              </p>
+                                            <div class="flex w-max items-end">
+                                                <button
+                                                    type="button"
+                                                    @click="closeModal"
+                                                    class="cancel-btn mr-3"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    class="save-btn"
+                                                >
+                                                    {{
+                                                        isEditing
+                                                            ? 'Update Employee'
+                                                            : 'Add Employee'
+                                                    }}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <div class="w-max">
-              <div
-                class="relative grid items-center px-2 py-1 font-sans text-xs font-bold text-green-900 uppercase rounded-md select-none whitespace-nowrap bg-green-500/20">
-                <span class=""> {{ employee.user.status }}</span>
-              </div>
+
+            <div class="overflow-scroll p-0 px-0">
+                <div class="pt-0 pr-4 pb-0 pl-4">
+                    <div
+                        v-if="$page.props.flash && $page.props.flash.success"
+                        class="mb-4 rounded bg-green-100 p-2 text-green-800"
+                    >
+                        {{ $page.props.flash.success }}
+                    </div>
+                </div>
+                <table class="mt-0 w-full min-w-max table-auto text-left">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Name
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Contact
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Assigned Client
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Role
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Channels
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Online / Offline
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-4 font-sans text-sm font-normal opacity-70"
+                            >
+                                Account
+                            </th>
+                            <th
+                                class="border-blue-gray-100 border-y p-2 font-sans text-sm font-normal opacity-70"
+                            >
+                                Action
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="employee in employees.data"
+                            :key="employee.id"
+                            class="hover:bg-gray-50/50"
+                        >
+                            <td class="border-blue-gray-50 border-b p-4">
+                                <div class="flex flex-col">
+                                    <p
+                                        class="text-blue-gray-900 text-sm font-bold"
+                                    >
+                                        {{ employee.user.name }}
+                                    </p>
+                                    <p
+                                        class="text-blue-gray-900 text-sm opacity-70"
+                                    >
+                                        {{ employee.user.email }}
+                                    </p>
+                                </div>
+                            </td>
+                            <td class="border-blue-gray-50 border-b p-4">
+                                <div class="flex flex-col">
+                                    <p class="text-blue-gray-900 text-sm">
+                                        {{ employee.user.phone }}
+                                    </p>
+                                </div>
+                            </td>
+                            <td
+                                class="border-blue-gray-50 border-b p-4 text-sm"
+                            >
+                                {{
+                                    employee.client
+                                        ? employee.client.name
+                                        : 'No Client Assigned'
+                                }}
+                            </td>
+                            <td
+                                class="border-blue-gray-50 border-b p-4 text-sm"
+                            >
+                                {{ employee.user.occupation }}
+                            </td>
+                            <td class="border-blue-gray-50 border-b p-4">
+                                <div class="flex flex-wrap gap-1">
+                                    <span
+                                        v-for="c in employee.channel"
+                                        :key="c.id"
+                                        class="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"
+                                    >
+                                        {{ c.name }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="border-blue-gray-50 border-b p-4">
+                                <span
+                                    :class="[
+                                        'rounded-full px-2 py-1 text-xs font-bold uppercase',
+                                        employee.user.status === 'online'
+                                            ? 'border border-green-500/30 bg-green-500/20 text-green-900'
+                                            : 'border border-red-500/30 bg-red-500/20 text-red-900',
+                                    ]"
+                                >
+                                    {{
+                                        employee.user.status === 'online'
+                                            ? 'Online'
+                                            : 'Offline'
+                                    }}
+                                </span>
+                            </td>
+
+                            <td class="border-blue-gray-50 border-b p-4">
+                                <button
+                                    @click="toggleStatus(employee)"
+                                    :title="
+                                        employee.user.is_active
+                                            ? 'Deactivate Account'
+                                            : 'Activate Account'
+                                    "
+                                    class="transition-opacity transition-transform hover:opacity-80 active:scale-95"
+                                >
+                                    <span
+                                        :class="[
+                                            'cursor-pointer rounded-full px-2 py-1 text-xs font-bold uppercase',
+                                            employee.user.is_active
+                                                ? 'border border-green-500/30 bg-green-500/20 text-green-900'
+                                                : 'border border-red-500/30 bg-red-500/20 text-red-900',
+                                        ]"
+                                    >
+                                        {{
+                                            employee.user.is_active
+                                                ? 'Active'
+                                                : 'Inactive'
+                                        }}
+                                    </span>
+                                </button>
+                            </td>
+                            <td class="border-blue-gray-50 border-b p-0">
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        @click="editEmployee(employee)"
+                                        class="rounded-lg p-2 text-blue-600 transition-colors hover:bg-blue-50"
+                                        title="Edit"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            class="h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                            />
+                                        </svg>
+                                    </button>
+
+                                    <button
+                                        @click="confirmDelete(employee.id)"
+                                        class="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50"
+                                        title="Delete"
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            class="h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                            />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-               {{ employee.user.phone }}
-            </p>
-          </td>
-            <td class="p-4 border-b border-blue-gray-50">
+            <div
+                class="border-blue-gray-50 flex items-center justify-between border-t p-4"
+            >
+                <div class="text-sm text-gray-600">
+                    Showing {{ employees.from || 0 }} to
+                    {{ employees.to || 0 }} of {{ employees.total }} entries
+                </div>
 
-              <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-                  {{ employee.channel.name }}
-                </p>
-                <p
-                  class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900 opacity-70">
-                  {{ employee.client.name }}
-                </p>
-          </td>
-          <td class="p-4 border-b border-blue-gray-50">
-            <button
-              class="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-              type="button">
-              <span class="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
-                  class="w-4 h-4">
-                  <path
-                    d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z">
-                  </path>
-                </svg>
-              </span>
-            </button>
-          </td>
-        </tr>
+                <div class="flex flex-nowrap space-x-2">
+                    <template
+                        v-for="(link, index) in employees.links"
+                        :key="index"
+                    >
+                        <Link
+                            v-if="link.url"
+                            :href="link.url"
+                            v-html="link.label"
+                            preserve-scroll
+                            class="inline-block min-w-[40px] rounded border px-3 py-1 text-center transition-all duration-200"
+                            :class="{
+                                'border-blue-500 bg-blue-500 text-white':
+                                    link.active,
+                                'border-gray-300 bg-white text-blue-500 hover:bg-gray-50':
+                                    !link.active,
+                            }"
+                        ></Link>
 
-      </tbody>
-    </table>
-  </div>
-  <div class="flex items-center justify-between p-4 border-t border-blue-gray-50">
-    <p class="block font-sans text-sm antialiased font-normal leading-normal text-blue-gray-900">
-      Page 1 of 10
-    </p>
-    <div class="flex gap-2">
-      <button
-        class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-        type="button">
-        Previous
-      </button>
-      <button
-        class="select-none rounded-lg border border-gray-900 py-2 px-4 text-center align-middle font-sans text-xs font-bold uppercase text-gray-900 transition-all hover:opacity-75 focus:ring focus:ring-gray-300 active:opacity-[0.85] disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-        type="button">
-        Next
-      </button>
-    </div>
-  </div>
-</div>
-
-
+                        <span
+                            v-else
+                            v-html="link.label"
+                            class="inline-block min-w-[40px] cursor-not-allowed rounded border border-gray-300 bg-gray-200 px-3 py-1 text-center text-gray-500"
+                        ></span>
+                    </template>
+                </div>
+            </div>
+        </div>
     </AppLayout>
+
+    <div
+        v-if="showDeleteModal"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    >
+        <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h2 class="text-lg font-bold text-gray-900">Confirm Deletion</h2>
+            <p class="mt-2 text-sm text-gray-500">
+                Are you sure you want to delete this employee? This action is
+                permanent and all associated data will be removed.
+            </p>
+
+            <div class="mt-6 flex justify-center gap-3">
+                <button
+                    @click="showDeleteModal = false"
+                    class="rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                    No, Keep it
+                </button>
+                <button
+                    @click="executeDelete"
+                    class="rounded-lg bg-red-600 px-6 py-2 text-sm font-bold text-white shadow-md transition-all hover:bg-red-700 active:scale-95"
+                >
+                    Yes, Delete Employee
+                </button>
+            </div>
+        </div>
+    </div>
 </template>

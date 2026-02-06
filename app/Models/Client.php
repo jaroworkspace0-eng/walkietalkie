@@ -15,6 +15,7 @@ class Client extends Model
         'phone',
         'email',
         'address',
+        'is_active',
     ];
 
     public function channels() {

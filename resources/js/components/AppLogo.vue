@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import type { HTMLAttributes } from 'vue';
+import { useSidebar } from './ui/sidebar/utils';
+
+const { toggleSidebar } = useSidebar();
+
+const props = defineProps<{
+    class?: HTMLAttributes['class'];
+}>();
 </script>
 
 <template>
@@ -8,9 +15,19 @@ import AppLogoIcon from '@/components/AppLogoIcon.vue';
     >
         <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
     </div> -->
-    <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate leading-tight font-semibold"
-            >Dycom WalkieTalkie</span
+    <div class="ml-1 flex flex-1 items-center p-0 text-left text-sm">
+        <span class="flex-1 truncate leading-tight font-semibold"> Dycom </span>
+
+        <!-- <Button
+            data-sidebar="trigger"
+            data-slot="sidebar-trigger"
+            variant="ghost"
+            size="icon"
+            :class="cn('h-7 w-7', props.class)"
+            @click="toggleSidebar"
         >
+            <PanelLeft />
+            <span class="sr-only">Toggle Sidebar</span>
+        </Button> -->
     </div>
 </template>

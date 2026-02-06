@@ -46,7 +46,7 @@ class ClientController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:clients,email',
             'phone' => 'required|string',
-            'address' => 'required|string',
+            'address' => 'nullable|string',
         ]);
 
         Client::create($validated);
@@ -59,7 +59,7 @@ class ClientController extends Controller
      */
     public function show(string $id)
     {
-        return Client::all();
+        return Client::where('is_active', 1)->get();
     }
 
     /**
@@ -81,16 +81,15 @@ class ClientController extends Controller
             'required',
             'email',
             'max:250',
-            Rule::unique('employees', 'email')->ignore($client->id),
+            Rule::unique('clients', 'email')->ignore($client->id),
         ],
             'phone' => 'required|string',
-            'role' => 'required|string'
+            'address' => 'nullable|string',
         ]);
 
         $client->update($validated);
 
-        return redirect()->route('clients.index')
-            ->with('success', 'Client updated successfully!');
+        return redirect()->back()->with('success', 'Client updated successfully!');
 
     }
 
@@ -100,9 +99,16 @@ class ClientController extends Controller
     public function destroy(Client $client)
     {
         $client->delete();
+        return redirect()->back()->with('success', 'Client deleted successfully!');
 
-         return redirect()
-            ->route('clients.index')
-            ->with('success', 'Client deleted successfully.');
+    }
+
+    public function toggleStatus(Client $client)
+    {
+        $client->update([
+            'is_active' => !$client->is_active
+        ]);
+
+        return redirect()->back()->with('success', 'Client status updated successfully.');
     }
 }

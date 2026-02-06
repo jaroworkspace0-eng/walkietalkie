@@ -11,6 +11,7 @@ class Employee extends Model
 
     protected $fillable = [
         'user_id',
+        'client_id',
         'channel_id'
     ];
 
@@ -20,7 +21,8 @@ class Employee extends Model
 
 
     public function channel() {
-        return $this->belongsTo(Channel::class);
+        return $this->belongsToMany(Channel::class)->withTimestamps();
+        // return $this->belongsTo(Channel::class);
     }
 
     public function user() {

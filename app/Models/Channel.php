@@ -13,7 +13,8 @@ class Channel extends Model
         'client_id',
         'name',
         'category',
-        'type'
+        'type',
+        'is_active',
     ];
 
     public function client(){

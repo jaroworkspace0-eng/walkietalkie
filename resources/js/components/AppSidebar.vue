@@ -14,7 +14,12 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, HomeIcon, LayoutGrid, Users } from 'lucide-vue-next';
+import {
+    ArrowsUpFromLineIcon,
+    Briefcase,
+    Building,
+    HomeIcon,
+} from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -23,30 +28,26 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: HomeIcon,
     },
-     {
+    {
         title: 'Clients',
         href: '/clients',
-        icon: LayoutGrid,
+        icon: Building,
     },
-         {
-        title: 'Users',
+    {
+        title: 'Employees',
         href: '/employees',
-        icon: LayoutGrid,
+        icon: Briefcase,
     },
     //  {
     //     title: 'Users',
     //     href: '/users',
     //     icon: Users,
     // },
-        {
+    {
         title: 'Channels',
         href: '/channels',
-        icon: LayoutGrid,
+        icon: ArrowsUpFromLineIcon,
     },
-
-
-
-
 ];
 
 // const footerNavItems: NavItem[] = [

@@ -67,4 +67,13 @@ class UserController extends Controller
     {
         //
     }
+
+    public function toggleStatus(User $user)
+    {
+        $user->update([
+            'is_active' => !$user->is_active
+        ]);
+
+        return redirect()->back()->with('success', 'User status updated successfully.');
+    }
 }

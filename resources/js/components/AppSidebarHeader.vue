@@ -2,6 +2,7 @@
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import type { BreadcrumbItemType } from '@/types';
+import SearchHeader from './SearchHeader.vue';
 
 withDefaults(
     defineProps<{
@@ -23,5 +24,7 @@ withDefaults(
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </template>
         </div>
+
+        <SearchHeader />
     </header>
 </template>
