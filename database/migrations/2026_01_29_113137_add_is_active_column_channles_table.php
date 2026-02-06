@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('channels', function (Blueprint $table) {
-            $table->boolean('is_active')->default(true)->after('id');
+            if (!Schema::hasColumn('channels', 'is_active')) {
+                $table->boolean('is_active')->default(true)->after('id');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('channels', function (Blueprint $table) {
-            $table->dropColumn('is_active');
+            if (Schema::hasColumn('channels', 'is_active')) {
+                $table->dropColumn('is_active');
+            }
         });
     }
 };
