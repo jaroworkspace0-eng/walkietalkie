@@ -106,7 +106,12 @@ Route::post('/user/update-status', [StatusController::class, 'updateStatus'])
     ->middleware('auth:sanctum');
 
 
-Route::resource("employees", EmployeeController::class);
+// Route::resource("employees", EmployeeController::class);
+Route::prefix('v1')->name('api.')->group(function () {
+    Route::apiResource('employees', EmployeeController::class);
+});
+
+
 Route::resource('clients', ClientController::class);
 Route::resource('channels', ChannelController::class);
 Route::get('clients/list', [ClientController::class, 'clients']);
