@@ -12,14 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('employees', function (Blueprint $blueprint) {
-            // 1. Drop the foreign key constraint first
-            $blueprint->dropForeign('employees_client_id_foreign');
+            if (Schema::hasColumn('employees', 'client_id')) {
 
-            // 2. Optional: Drop the index if it wasn't dropped automatically
-            $blueprint->dropIndex('employees_client_id_foreign');
+                // Drop foreign key safely
+                $foreignKeys = Schema::getConnection()
+                    ->getDoctrineSchemaManager()
+                    ->listTableForeignKeys('employees');
 
-            // 3. Finally, drop the column
-            $blueprint->dropColumn('client_id');
+                foreach ($foreignKeys as $fk) {
+                    if (in_array('client_id', $fk->getLocalColumns())) {
+                        $blueprint->dropForeign($fk->getName());
+                    }
+                }
+
+                // Finally, drop the column
+                $blueprint->dropColumn('client_id');
+            }
         });
     }
 
