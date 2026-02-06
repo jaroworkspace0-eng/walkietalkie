@@ -2,9 +2,9 @@
 import Label from '@/components/ui/label/Label.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3'; // useForm is better for validation errors
-import { useEcho } from '@laravel/echo-vue';
+// import { useEcho } from '@laravel/echo-vue';
 import axios from 'axios';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import '../../../css/style.css';
 
 // 1. Data States
@@ -18,7 +18,7 @@ const clients = ref([]);
 // const user = page.props.auth.user;
 // console.log('user:', user); // Should print your user object
 
-const echo = useEcho();
+// const echo = useEcho();
 
 const props = defineProps({
     employees: { type: Object, required: true },
@@ -27,20 +27,20 @@ const props = defineProps({
 
 const employeesList = ref(props.employees.data);
 
-onMounted(() => {
-    const echoInstance = window.Echo;
-    if (!echoInstance) return console.error('Echo not ready ' + window.Echo);
+// onMounted(() => {
+//     const echoInstance = window.Echo;
+//     if (!echoInstance) return console.error('Echo not ready ' + window.Echo);
 
-    echoInstance.private('status-updates').listen('UserStatusUpdated', (e) => {
-        console.log('Event received!', e);
-        const employee = employeesList.value.find(
-            (emp) => emp.user.id === e.userId,
-        );
-        if (employee) {
-            employee.user.status = e.status;
-        }
-    });
-});
+//     echoInstance.private('status-updates').listen('UserStatusUpdated', (e) => {
+//         console.log('Event received!', e);
+//         const employee = employeesList.value.find(
+//             (emp) => emp.user.id === e.userId,
+//         );
+//         if (employee) {
+//             employee.user.status = e.status;
+//         }
+//     });
+// });
 
 // 2. Fetch Data (If not using Inertia props for these)
 const handleChannels = async () => {
