@@ -75,6 +75,7 @@ Route::post('/login', function (Request $request) {
         ],
         'channels' => $channels,
         'token' => $token,
+        'test' => 'Testin',
     ]);
 });
 
