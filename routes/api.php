@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 Route::post('/login', function (Request $request) {
-    dd('fdfd');
     $request->validate([
         'email' => 'required|email',
         'password' => 'required',
