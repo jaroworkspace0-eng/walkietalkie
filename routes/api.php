@@ -63,7 +63,7 @@ Route::post('/login', function (Request $request) {
             // Assuming your Channel model has a relationship to a Company/Client
             'client' => $channel->client?->name ?? 'Private Channel', 
         ];
-    })->values()->toArray();
+    }) ?? collect([]);
 
 
     return response()->json([
