@@ -52,7 +52,18 @@ Route::post('/login', function (Request $request) {
 
     // 4. Clean Data Extraction
     // Use optional chaining (?) and collect the names
-    $channels = $user->employee?->channel->pluck('name', 'id') ?? collect([]);
+    // $channels = $user->employee?->channel->pluck('name', 'id') ?? collect([]);
+
+        // 4. Clean Data Extraction
+    // We transform the collection into an array of objects
+    $channels = $user->employee?->channel->map(function($channel) {
+        return [
+            'id' => $channel->id,
+            'name' => $channel->name,
+            // Assuming your Channel model has a relationship to a Company/Client
+            'client' => $channel->client_name ?? 'Private Channel', 
+        ];
+    }) ?? collect([]);
 
     Log::info("Login Success - User: {$user->name} | Channels: " . $channels->implode(', '));
     Log::info("User ID: {$user->id} logged in via mobile.");
@@ -65,16 +76,7 @@ Route::post('/login', function (Request $request) {
         'user_id' => $user->id,
     ]));
 
-    // 4. Clean Data Extraction
-// We transform the collection into an array of objects
-$channels = $user->employee?->channel->map(function($channel) {
-    return [
-        'id' => $channel->id,
-        'name' => $channel->name,
-        // Assuming your Channel model has a relationship to a Company/Client
-        'client' => $channel->client_name ?? 'Private Channel', 
-    ];
-}) ?? collect([]);
+
 
     return response()->json([
         'user' => [
