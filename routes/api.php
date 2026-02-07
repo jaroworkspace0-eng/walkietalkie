@@ -61,7 +61,7 @@ Route::post('/login', function (Request $request) {
             'id' => $channel->id,
             'name' => $channel->name,
             // Assuming your Channel model has a relationship to a Company/Client
-            'client' => $channel->client_name ?? 'Private Channel', 
+            'client' => $channel->client?->name ?? 'Private Channel', 
         ];
     }) ?? collect([]);
 
