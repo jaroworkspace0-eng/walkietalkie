@@ -73,7 +73,7 @@ Route::post('/login', function (Request $request) {
             'occupation' => $user->occupation,
             'user_id' => $user->id,
         ],
-        'channels' => $channels,
+        'channels' => [],
         'token' => $token,
     ]);
 });
