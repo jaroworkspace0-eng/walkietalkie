@@ -58,24 +58,12 @@ Route::post('/login', function (Request $request) {
     // We transform the collection into an array of objects
     $channels = $user->employee?->channel->map(function($channel) {
         return [
-            'id' => $channel->id,
-            'name' => $channel->name,
+            'id' => (int) $channel->id,
+            'name' => (string) $channel->name,
             // Assuming your Channel model has a relationship to a Company/Client
             'client' => $channel->client?->name ?? 'Private Channel', 
         ];
-    }) ?? collect([]);
-
-    Log::info("Login Success - User: {$user->name} | Channels: " . $channels->implode(', '));
-    Log::info("User ID: {$user->id} logged in via mobile.");
-    Log::info("Generated Token: {$token}");
-    log::info("User Details: " . json_encode([
-        'name' => $user->name,
-        'email' => $user->email,
-        'phone' => $user->phone,
-        'occupation' => $user->occupation,
-        'user_id' => $user->id,
-    ]));
-
+    })->values()->toArray();
 
 
     return response()->json([
