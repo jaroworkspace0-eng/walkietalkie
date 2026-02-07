@@ -58,10 +58,9 @@ Route::post('/login', function (Request $request) {
     // We transform the collection into an array of objects
     $channels = $user->employee?->channel->map(function($channel) {
         return [
-            'id' => (int) $channel->id,
-            'name' => (string) $channel->name,
+            'id' => $channel->id,
+            'name' => $channel->name,
             // Assuming your Channel model has a relationship to a Company/Client
-            'client' => $channel->client?->name ?? 'Private Channel', 
         ];
     }) ?? collect([]);
 
