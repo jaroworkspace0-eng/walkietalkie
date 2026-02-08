@@ -11,5 +11,6 @@ class ChannelEmployee extends Model
     protected $fillable = [
         'employee_id',
         'channel_id',
+        'is_online',
     ];
 }
