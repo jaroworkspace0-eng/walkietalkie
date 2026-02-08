@@ -117,4 +117,26 @@ class ChannelController extends Controller
         return redirect()->back()->with('success', 'Channels status updated successfully.');
         
     }
+
+public function getUnits(Channel $channel)
+{
+    $units = $channel->employees()->with('user')->get();
+
+    $formattedUnits = $units->mapWithKeys(function ($unit) {
+        if (!$unit->user) return [];
+
+        // 🔑 Use the ID as the key to prevent overwriting
+        return [
+            $unit->user_id => [ 
+                'userId' => $unit->user->id,
+                'name'     => $unit->user->name,
+                'isOnline'   => $unit->user->status ?? 'offline',
+                'lastSeen' => $unit->pivot->last_seen ?? null,
+                'role'     => $unit->user->occupation ?? 'Guard',
+            ]
+        ];
+    });
+
+    return response()->json($formattedUnits);
+}
 }
