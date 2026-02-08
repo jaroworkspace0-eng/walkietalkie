@@ -11,25 +11,32 @@ class StatusController extends Controller
 {
     public function updateStatus(Request $request)
     {
+        // 1. Find the user first. If not found, it automatically returns a 404.
+        $user = User::findOrFail($request->user_id);
 
-        $user = User::where('id', $request->user_id)
-                    ->update([
-                        'status' => $request->status
-                    ]);
+        // 2. Update the user status directly on the model
+        $user->update([
+            'status' => $request->status
+        ]);
 
-        if($user) {
+        // 3. Get the employee relationship
+        $employee = $user->employee; // No need for ->first() if it's a HasOne
 
-        $employee = $user->employee()->first();
-           ChannelEmployee::where('employee_id', $employee->id) // Eloquent handles the fetch automatically
+        if ($employee) {
+            // 4. Update the pivot table for the specific channel
+            ChannelEmployee::where('employee_id', $employee->id)
                 ->where('channel_id', $request->channel_id)
                 ->update([
                     'is_online' => $request->status === 'online' ? 1 : 0,
-                    'last_seen' => now(), // 💡 Add this to track heartbeats!
+                    'last_seen' => now(),
                 ]);
-            broadcast(new UserStatusUpdated($request->user_id, $request->status))->toOthers();
+
+            // 5. Broadcast the event for real-time UI updates
+            broadcast(new UserStatusUpdated($user->id, $request->status))->toOthers();
+
             return response()->json(['message' => 'Status updated successfully.'], 200);
         }
 
-        return response()->json(['error' => 'User not found.'], 404);
+        return response()->json(['error' => 'Employee profile not found.'], 404);
     }
 }
