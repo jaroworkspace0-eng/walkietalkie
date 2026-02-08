@@ -113,8 +113,10 @@ Route::prefix('v1')->name('api.')->group(function () {
     Route::resource('clients', ClientController::class);
     Route::resource('channels', ChannelController::class);
     Route::get('clients/list', [ClientController::class, 'clients']);
-    Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
+    // Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
 });
+
+Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
 
 
 
