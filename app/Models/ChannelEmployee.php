@@ -12,5 +12,6 @@ class ChannelEmployee extends Model
         'employee_id',
         'channel_id',
         'is_online',
+        'last_seen',
     ];
 }
