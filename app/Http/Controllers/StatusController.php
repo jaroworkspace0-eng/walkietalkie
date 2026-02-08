@@ -6,6 +6,7 @@ use App\Events\UserStatusUpdated;
 use App\Models\ChannelEmployee;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class StatusController extends Controller
 {
@@ -19,6 +20,8 @@ class StatusController extends Controller
             'status' => $request->status
         ]);
 
+        Log::error('Status: ', $request->status);
+        Log::error('UserId: ', $request->user_id);
         // 3. Get the employee relationship
         $employee = $user->employee; // No need for ->first() if it's a HasOne
 
