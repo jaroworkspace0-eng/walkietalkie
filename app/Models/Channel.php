@@ -23,4 +23,8 @@ class Channel extends Model
     public function employees(){
         return $this->hasMany(Employee::class);
     }
+
+    public function channelEmployees(){
+        return $this->belongsToMany(ChannelEmployee::class, 'channel_id');
+    }
 }

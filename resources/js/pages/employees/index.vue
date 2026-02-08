@@ -534,8 +534,25 @@ const toggleStatus = (employee) => {
                                     <span
                                         v-for="c in employee.channel"
                                         :key="c.id"
-                                        class="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"
+                                        :class="[
+                                            'flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-sm',
+                                            c.pivot.is_online
+                                                ? 'border-green-200 bg-green-50 text-green-700'
+                                                : 'border-gray-200 bg-gray-50 text-gray-500',
+                                        ]"
+                                        :title="
+                                            'Last seen: ' + c.pivot.last_seen
+                                        "
                                     >
+                                        <span
+                                            :class="[
+                                                'h-2 w-2 rounded-full',
+                                                c.pivot.is_online
+                                                    ? 'animate-pulse bg-green-500'
+                                                    : 'bg-gray-400',
+                                            ]"
+                                        ></span>
+
                                         {{ c.name }}
                                     </span>
                                 </div>
