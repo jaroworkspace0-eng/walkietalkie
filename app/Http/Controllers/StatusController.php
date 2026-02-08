@@ -19,7 +19,8 @@ class StatusController extends Controller
 
         if($user) {
 
-           ChannelEmployee::where('employee_id', $user->employee->id) // Eloquent handles the fetch automatically
+        $employee = $user->employee()->first();
+           ChannelEmployee::where('employee_id', $employee->id) // Eloquent handles the fetch automatically
                 ->where('channel_id', $request->channel_id)
                 ->update([
                     'is_online' => $request->status === 'online' ? 1 : 0,
