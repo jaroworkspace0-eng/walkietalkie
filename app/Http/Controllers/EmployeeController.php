@@ -37,17 +37,28 @@ class EmployeeController extends Controller
     //     ]);
     // }
 
-    public function index()
-    {
-        $employees = Employee::with(['channel', 'client', 'user'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(10); // Adjust '10' to however many rows you want per page
-                    
+    public function index(Request $request)
+{
+    // 1. Grab the status from the URL (?status=offline)
+    $status = $request->query('status');
 
-        return Inertia::render('employees/index', [
-            'employees' => $employees // Raw data, no resource wrapper
-        ]);
-    }
+    $employees = Employee::with(['channel', 'client', 'user'])
+        // 2. Only apply this filter if $status is present
+        ->when($status, function ($query, $status) {
+            return $query->whereHas('user', function ($q) use ($status) {
+                $q->where('status', $status);
+            });
+        })
+        ->orderBy('created_at', 'desc')
+        ->paginate(10)
+        // 3. This ensures that when you click "Page 2", the filter stays active
+        ->withQueryString();
+
+    return Inertia::render('employees/index', [
+        'employees' => $employees,
+        'filters' => $request->only(['status']), // Optional: pass current filter back to Vue
+    ]);
+}
 
     /**
      * Show the form for creating a new resource.

@@ -18,6 +18,8 @@ const props = defineProps<{
         channelsCount: number;
         employeesCount: number;
         clientsCount: number;
+        onlineCount: number;
+        offlineCount: number;
     };
 }>();
 
@@ -39,6 +41,20 @@ const metrics = computed(() => [
         value: (props.stats?.clientsCount ?? 0).toLocaleString(),
         icon: '🧑‍💼',
         href: '/clients',
+    },
+    {
+        label: 'Online Now',
+        value: (props.stats?.onlineCount ?? 0).toLocaleString(),
+        icon: '🟢',
+        href: '/employees?status=online',
+        color: 'green',
+    },
+    {
+        label: 'Offline',
+        value: (props.stats?.offlineCount ?? 0).toLocaleString(),
+        icon: '⚪',
+        href: '/employees?status=offline',
+        color: 'gray',
     },
 ]);
 
@@ -65,7 +81,7 @@ const metrics = computed(() => [
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-6 p-6 sm:grid-cols-2 lg:grid-cols-5">
             <Link
                 v-for="metric in metrics"
                 :key="metric.label"
@@ -84,9 +100,23 @@ const metrics = computed(() => [
                 </div>
 
                 <div
-                    class="rounded-full bg-gray-50 p-3 transition-colors group-hover:bg-blue-50"
+                    :class="[
+                        'rounded-full p-3 transition-colors',
+                        metric.label === 'Online Now'
+                            ? 'bg-green-50 group-hover:bg-green-100'
+                            : 'bg-gray-50 group-hover:bg-blue-50',
+                    ]"
                 >
-                    <span class="text-2xl">{{ metric.icon }}</span>
+                    <span
+                        :class="[
+                            'text-2xl',
+                            metric.label === 'Online Now'
+                                ? 'animate-pulse'
+                                : '',
+                        ]"
+                    >
+                        {{ metric.icon }}
+                    </span>
                 </div>
             </Link>
         </div>
