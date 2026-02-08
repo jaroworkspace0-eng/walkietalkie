@@ -111,11 +111,12 @@ Route::post('/user/update-status', [StatusController::class, 'updateStatus'])
 Route::prefix('v1')->name('api.')->group(function () {
     Route::apiResource('employees', EmployeeController::class);
     Route::resource('clients', ClientController::class);
-    Route::resource('channels', ChannelController::class);
+    // Route::resource('channels', ChannelController::class);
     Route::get('clients/list', [ClientController::class, 'clients']);
     // Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
 });
 
+Route::resource('channels', ChannelController::class);
 Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
 
 
