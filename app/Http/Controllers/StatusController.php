@@ -20,8 +20,8 @@ class StatusController extends Controller
             'status' => $request->status
         ]);
 
-        Log::error('Status: ', $request->status);
-        Log::error('UserId: ', $request->user_id);
+        Log::info('Status: ' . $request->status);
+        Log::info('UserId: ' . $request->user_id);
         // 3. Get the employee relationship
         $employee = $user->employee; // No need for ->first() if it's a HasOne
 
