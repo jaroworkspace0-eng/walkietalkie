@@ -122,7 +122,7 @@ const deleteItem = (item: BaseItem, type: string) => {
 <template>
     <div class="relative flex h-16 w-full items-center px-0">
         <!-- Search Input -->
-        <div class="flex w-full items-center">
+        <!-- <div class="flex w-full items-center">
             <Search class="mr-2 ml-3 size-4 text-muted-foreground" />
 
             <input
@@ -141,7 +141,7 @@ const deleteItem = (item: BaseItem, type: string) => {
             >
                 <X class="size-4" />
             </button>
-        </div>
+        </div> -->
 
         <!-- Results Dropdown -->
         <div
