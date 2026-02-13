@@ -12,16 +12,17 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
-        return Inertia::render('Dashboard', [
-            'stats' => [
+   
+   public function index()
+   {
+     return response()->json([
+         'stats' => [
                 'channelsCount' => Channel::count(),
                 'employeesCount' => Employee::count(),
                 'clientsCount' => Client::count(),
                 'onlineCount' => User::where('role', 'employee')->where('status', 'online')->count(),
                 'offlineCount' => User::where('role', 'employee')->where('status', 'offline')->count(),
             ]
-        ]);
-    }
+         ]);
+   }
 }

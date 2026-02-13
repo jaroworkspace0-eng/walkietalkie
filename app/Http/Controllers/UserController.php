@@ -74,6 +74,10 @@ class UserController extends Controller
             'is_active' => !$user->is_active
         ]);
 
-        return redirect()->back()->with('success', 'User status updated successfully.');
+          return response()->json([
+                'success' => true,
+                'message' => 'User status updated successfully.',
+            ]);
+
     }
 }

@@ -3,8 +3,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import '../../../css/style.css';
 
 import { type BreadcrumbItem } from '@/types';
-import { Link, router, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { useForm } from '@inertiajs/vue3';
+import axios from 'axios';
+import { onMounted, ref } from 'vue';
 
 import '@inertiajs/core';
 
@@ -23,6 +24,35 @@ declare module '@inertiajs/core' {
         };
     }
 }
+
+const flashMessage = ref<string | null>(null);
+const errors = ref<{ [key: string]: string[] }>({});
+const flash = ref<{ success?: string; error?: string }>({});
+const isProcessing = ref(false);
+
+const clients = ref<any[]>([]);
+const pagination = ref<any>(null);
+
+onMounted(async () => {
+    try {
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_URL}/api/clients`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`, // if using Sanctum or JWT
+                },
+            },
+        );
+        clients.value = data.clients.data; // paginated array
+        pagination.value = {
+            current_page: data.clients.current_page,
+            last_page: data.clients.last_page,
+            total: data.clients.total,
+        };
+    } catch (err) {
+        console.error('Failed to load clients', err);
+    }
+});
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -45,17 +75,6 @@ const closeDeleteModal = () => {
     clientToDelete.value = null;
 };
 
-const deleteClient = () => {
-    router.delete(`/clients/${clientToDelete.value.id}`, {
-        onSuccess: () => {
-            closeDeleteModal();
-        },
-        onFinish: () => {
-            confirmationName.value = '';
-        },
-    });
-};
-
 const openModal = () => {
     isEditing.value = false;
     form.reset();
@@ -63,9 +82,10 @@ const openModal = () => {
 };
 
 const closeModal = () => {
+    console.log('Closing modal...');
     showModal.value = false;
     isEditing.value = false;
-    form.reset();
+    resetForm();
 };
 
 defineProps({
@@ -83,66 +103,172 @@ const form: any = useForm({
     address: '',
 });
 
-const createClient = () => {
-    router.post('/clients', form.value, {
-        onSuccess: () => {
-            resetForm();
-            showModal.value = false;
-            closeModal();
-        },
-    });
+function resetForm() {
+    form.id = null;
+    form.name = '';
+    form.phone = '';
+    form.email = '';
+    form.address = '';
+    form.role = '';
+}
+
+// const editClient = (client: any) => {
+//     isEditing.value = true;
+
+//     // Fill the form with existing client data
+//     form.id = client.id;
+//     form.name = client.name;
+//     form.phone = client.phone;
+//     form.email = client.email;
+//     form.address = client.address;
+//     form.role = client.role;
+
+//     showModal.value = true;
+// };
+
+const createClient = async () => {
+    try {
+        isProcessing.value = true;
+        await axios.post(`${import.meta.env.VITE_APP_URL}/api/clients`, form);
+        resetForm();
+        closeModal();
+        await reloadClients(); // refresh list
+    } catch (err) {
+        console.error('Failed to create client', err);
+    } finally {
+        isProcessing.value = false; // stop loading
+    }
 };
 
-function resetForm() {
-    form.value = {
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        role: '',
-    };
+function showMessage(message: string) {
+    flashMessage.value = message;
+    setTimeout(() => (flashMessage.value = null), 3000); // auto-hide after 3s
 }
 
 const editClient = (client: any) => {
     isEditing.value = true;
-
-    // Fill the form with existing client data
-    form.id = client.id;
-    form.name = client.name;
-    form.phone = client.phone;
-    form.email = client.email;
-    form.address = client.address;
-    form.role = client.role;
-
+    Object.assign(form, client);
     showModal.value = true;
 };
 
-const handleSubmit = () => {
-    if (isEditing.value) {
-        form.put(`/clients/${form.id}`, {
-            onSuccess: () => closeModal(),
-        });
-    } else {
-        form.post('/clients', {
-            onSuccess: () => {
-                (closeModal(), resetForm());
-            },
-        });
+const handleSubmit = async () => {
+    try {
+        isProcessing.value = true;
+        let response;
+        if (isEditing.value) {
+            response = await axios.patch(
+                `${import.meta.env.VITE_APP_URL}/api/clients/${form.id}`,
+                form,
+
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`, // if using Sanctum or JWT
+                    },
+                },
+            );
+        } else {
+            response = await axios.post(
+                `${import.meta.env.VITE_APP_URL}/api/clients`,
+                form,
+
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`, // if using Sanctum or JWT
+                    },
+                },
+            );
+
+            resetForm();
+        }
+
+        showMessage(response.data.message);
+        closeModal();
+        await reloadClients();
+    } finally {
+        isProcessing.value = false;
     }
 };
 
-const toggleClientStatus = (client: any) => {
-    router.patch(
-        `/clients/${client.id}/toggle-status`,
-        {},
+const deleteClient = async () => {
+    try {
+        isProcessing.value = true;
+        let response;
+        response = await axios.delete(
+            `${import.meta.env.VITE_APP_URL}/api/clients/${clientToDelete.value.id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`, // if using Sanctum or JWT
+                },
+            },
+        );
+        showMessage(response.data.message);
+        closeDeleteModal();
+        await reloadClients();
+    } catch (err) {
+        console.error('Failed to delete client', err);
+    } finally {
+        isProcessing.value = false;
+    }
+};
+
+const toggleClientStatus = async (client: any) => {
+    try {
+        isProcessing.value = true;
+        let response;
+        response = await axios.patch(
+            `${import.meta.env.VITE_APP_URL}/api/clients/${client.id}/toggle-status`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`, // if using Sanctum or JWT
+                },
+            },
+        );
+        showMessage(response.data.message);
+        await reloadClients();
+    } catch (err) {
+        console.error('Failed to toggle status', err);
+    } finally {
+        isProcessing.value = false;
+    }
+};
+
+async function reloadClients() {
+    const { data } = await axios.get(
+        `${import.meta.env.VITE_APP_URL}/api/clients`,
         {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Optional: add a notification toast here
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
         },
     );
-};
+
+    clients.value = data.clients.data;
+    pagination.value = {
+        current_page: data.clients.current_page,
+        last_page: data.clients.last_page,
+        total: data.clients.total,
+    };
+}
+
+async function loadPage(url: string) {
+    try {
+        const { data } = await axios.get(
+            url.replace(import.meta.env.VITE_APP_URL, ''),
+        );
+        clients.value = data.clients.data;
+        pagination.value = {
+            from: data.clients.from,
+            to: data.clients.to,
+            total: data.clients.total,
+            links: data.clients.links,
+            current_page: data.clients.current_page,
+            last_page: data.clients.last_page,
+        };
+    } catch (err) {
+        console.error('Failed to load page', err);
+    }
+}
 </script>
 
 <template>
@@ -199,14 +325,10 @@ const toggleClientStatus = (client: any) => {
                                                     v-model="form.name"
                                                 />
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.name
-                                                    "
+                                                    v-if="errors.name"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.name
-                                                    }}
+                                                    {{ errors.name[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
@@ -219,14 +341,10 @@ const toggleClientStatus = (client: any) => {
                                                     v-model="form.phone"
                                                 />
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.phone
-                                                    "
+                                                    v-if="errors.phone"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.phone
-                                                    }}
+                                                    {{ errors.phone[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
@@ -239,14 +357,10 @@ const toggleClientStatus = (client: any) => {
                                                     v-model="form.email"
                                                 />
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.email
-                                                    "
+                                                    v-if="errors.email"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.email
-                                                    }}
+                                                    {{ errors.email[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
@@ -258,16 +372,10 @@ const toggleClientStatus = (client: any) => {
                                                     v-model="form.address"
                                                 ></textarea>
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors
-                                                            .address
-                                                    "
+                                                    v-if="errors.address"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors
-                                                            .address
-                                                    }}
+                                                    {{ errors.address[0] }}
                                                 </p>
                                             </div>
                                             <div class="flex w-max items-end">
@@ -298,16 +406,15 @@ const toggleClientStatus = (client: any) => {
                         </form>
                     </div>
                 </div>
-            </div>
 
-            <div class="pt-0 pr-4 pb-0 pl-4">
                 <div
-                    v-if="$page.props.flash && $page.props.flash.success"
-                    class="mb-4 rounded bg-green-100 p-2 text-green-800"
+                    v-if="flashMessage"
+                    class="mb-4 rounded bg-green-100 p-2 text-green-700"
                 >
-                    {{ $page.props.flash.success }}
+                    {{ flashMessage }}
                 </div>
             </div>
+
             <table class="mt-0 w-full min-w-max table-auto text-left">
                 <thead>
                     <tr class="bg-gray-50">
@@ -345,7 +452,7 @@ const toggleClientStatus = (client: any) => {
                 </thead>
                 <tbody>
                     <tr
-                        v-for="client in clients.data"
+                        v-for="client in clients"
                         :key="client.id"
                         class="hover:bg-gray-50/50"
                     >
@@ -478,22 +585,25 @@ const toggleClientStatus = (client: any) => {
                 class="border-blue-gray-50 flex items-center justify-between border-t p-4"
             >
                 <div class="text-sm text-gray-600">
-                    Showing {{ clients.from }} to {{ clients.to }} of
-                    {{ clients.total }} entries
+                    Showing {{ pagination?.from }} to {{ pagination?.to }} of
+                    {{ pagination?.total }} entries
                 </div>
 
                 <div class="flex space-x-2">
-                    <template v-for="link in clients.links" :key="link.label">
-                        <Link
+                    <template
+                        v-for="link in pagination?.links"
+                        :key="link.label"
+                    >
+                        <button
                             v-if="link.url"
-                            :href="link.url"
+                            @click="loadPage(link.url)"
                             class="rounded border px-3 py-1"
                             :class="{
                                 'bg-blue-500 text-white': link.active,
                                 'bg-white text-blue-500': !link.active,
                             }"
                             v-html="link.label"
-                        ></Link>
+                        ></button>
                         <span
                             v-else
                             class="rounded border bg-gray-200 px-3 py-1 text-gray-500"

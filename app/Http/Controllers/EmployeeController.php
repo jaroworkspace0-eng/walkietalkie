@@ -18,47 +18,35 @@ class EmployeeController extends Controller
      * Display a listing of the resource.
      */
     // public function index()
-    // {
-    //     // $employee = Employee::paginate(10);
-
-    //     //   return Inertia::render('employees/index', [
-    //     //     'employees' => $employee
-    //     // ]);
-
-    //     $employee = Employee::orderBy('created_at', 'desc')->get();
-    //     $employee->load('channel');
-    //     $employee->load('client');
-    //     $employee->load('user');
-
-    //     // return EmployeeResource::collection($employee);
-
-    //      return Inertia::render('employees/index', [
-    //         'employees' => EmployeeResource::collection($employee)
-    //     ]);
-    // }
+    
 
     public function index(Request $request)
-{
-    // 1. Grab the status from the URL (?status=offline)
-    $status = $request->query('status');
+    {
+        // 1. Grab the status from the URL (?status=offline)
+        $status = $request->query('status');
 
-    $employees = Employee::with(['channel', 'client', 'user'])
-        // 2. Only apply this filter if $status is present
-        ->when($status, function ($query, $status) {
-            return $query->whereHas('user', function ($q) use ($status) {
-                $q->where('status', $status);
-            });
-        })
-        ->orderBy('created_at', 'desc')
-        ->paginate(10)
-        // 3. This ensures that when you click "Page 2", the filter stays active
-        ->withQueryString();
+        $employees = Employee::with(['channel', 'client', 'user'])
+            // 2. Only apply this filter if $status is present
+            ->when($status, function ($query, $status) {
+                return $query->whereHas('user', function ($q) use ($status) {
+                    $q->where('status', $status);
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(10)
+            // 3. This ensures that when you click "Page 2", the filter stays active
+            ->withQueryString();
 
-    return Inertia::render('employees/index', [
-        'employees' => $employees,
-        'filters' => $request->only(['status']), // Optional: pass current filter back to Vue
-    ]);
-}
+        // return Inertia::render('employees/index', [
+        //     'employees' => $employees,
+        //     'filters' => $request->only(['status']), // Optional: pass current filter back to Vue
+        // ]);
+
+        return response()->json([
+            'employees' => $employees,
+            'filters' => $request->only('status'),
+        ]);
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -102,17 +90,20 @@ class EmployeeController extends Controller
                     $employee->channel()->syncWithoutDetaching($request->channel_id);
                 }
 
-                return redirect()->back()->with('success', 'Employee created and assigned to ' . ($employee->client->name ?? 'client'));
-
-                //  return redirect()->back()->with('success', 'Employee created successfully!');
+                  return response()->json([ 
+                    'success' => true, 
+                    'message' => 'Employee created and assigned to ' . ($employee->client->name ?? 'client'), 
+                    'client' => $employee, 
+                ]);
 
             }
 
-            return redirect()->back()->with('error', 'Failed to create employee.');
+             return response()->json([ 
+                    'success' => false, 
+                    'message' => 'Failed to create employee.', 
+                ]);
 
         });
-
-    
 
     }
 
@@ -180,7 +171,11 @@ class EmployeeController extends Controller
             $employee->channel()->sync([$request->channel_id]);
         }
 
-        return redirect()->back()->with('success', 'Employee updated successfully!');
+         return response()->json([ 
+                    'success' => true, 
+                    'message' => 'Employee updated successfully!', 
+                    'client' => $employee, 
+                ]);
     });
 }
 
@@ -193,6 +188,11 @@ class EmployeeController extends Controller
         // First, delete the associated User record
         User::where('id', $user_id)->delete();
         $employee->delete();
-        return redirect()->back()->with('success', 'Employee deleted successfully!');
+
+         return response()->json([ 
+                    'success' => true, 
+                    'message' => 'Employee deleted successfully!', 
+                ]);
+                
     }
 }

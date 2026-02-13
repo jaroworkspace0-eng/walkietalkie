@@ -1,14 +1,30 @@
 <script setup lang="ts">
+import api from '@/axios'; // your global axios instance
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import { onMounted, ref } from 'vue';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Clients',
-        href: '/clients',
-    },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Clients', href: '/clients' }];
+
+// State
+const clients = ref<any[]>([]);
+const pagination = ref<any>(null);
+
+// Fetch clients
+onMounted(async () => {
+    try {
+        const { data } = await api.get('/clients');
+        clients.value = data.clients.data; // paginated data
+        pagination.value = {
+            current_page: data.clients.current_page,
+            last_page: data.clients.last_page,
+            total: data.clients.total,
+        };
+    } catch (err) {
+        console.error('Failed to load clients', err);
+    }
+});
 </script>
 
 <template>

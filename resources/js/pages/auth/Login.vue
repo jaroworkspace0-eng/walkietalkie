@@ -1,22 +1,43 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
-import { register } from '@/routes';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
+import axios from 'axios';
+import { ref } from 'vue';
 
-defineProps<{
-    status?: string;
-    canResetPassword: boolean;
-    canRegister: boolean;
-}>();
+const email = ref('');
+const password = ref('');
+const remember = ref(false);
+const processing = ref(false);
+const accountType = ref('admin');
+const error = ref<string | null>(null);
+
+async function login() {
+    processing.value = true;
+    error.value = null;
+
+    try {
+        // Step 1: Get CSRF cookie
+        await axios.get(`${import.meta.env.VITE_APP_URL}/sanctum/csrf-cookie`);
+
+        // Step 2: Post to Laravel's /login route (not /api/login)
+        await axios.post(`${import.meta.env.VITE_APP_URL}/login`, {
+            email: email.value,
+            password: password.value,
+        });
+
+        // Laravel sets a session cookie automatically
+        window.location.href = '/dashboard'; // works with auth middleware
+    } catch (err: any) {
+        error.value = err.response?.data?.message || 'Login failed';
+    } finally {
+        processing.value = false;
+    }
+}
 </script>
 
 <template>
@@ -24,87 +45,54 @@ defineProps<{
         title="Log in to your account"
         description="Enter your email and password below to log in"
     >
-        <Head title="Log in" />
-
-        <div
-            v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
-            {{ status }}
-        </div>
-
-        <Form
-            v-bind="store.form()"
-            :reset-on-success="['password']"
-            v-slot="{ errors, processing }"
-            class="flex flex-col gap-6"
-        >
+        <form @submit.prevent="login" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
                     <Label for="email">Email address</Label>
                     <Input
                         id="email"
                         type="email"
-                        name="email"
+                        v-model="email"
                         required
                         autofocus
-                        :tabindex="1"
                         autocomplete="email"
                         placeholder="email@example.com"
                     />
-                    <InputError :message="errors.email" />
+                    <InputError :message="error" />
                 </div>
 
                 <div class="grid gap-2">
-                    <div class="flex items-center justify-between">
-                        <Label for="password">Password</Label>
-                        <TextLink
-                            v-if="canResetPassword"
-                            :href="request()"
-                            class="text-sm"
-                            :tabindex="5"
-                        >
-                            Forgot password?
-                        </TextLink>
-                    </div>
+                    <Label for="password">Password</Label>
                     <Input
                         id="password"
                         type="password"
-                        name="password"
+                        v-model="password"
                         required
-                        :tabindex="2"
                         autocomplete="current-password"
                         placeholder="Password"
                     />
-                    <InputError :message="errors.password" />
                 </div>
 
                 <div class="flex items-center justify-between">
                     <Label for="remember" class="flex items-center space-x-3">
-                        <Checkbox id="remember" name="remember" :tabindex="3" />
+                        <Checkbox id="remember" v-model="remember" />
                         <span>Remember me</span>
                     </Label>
+                </div>
+
+                <div>
+                    <input type="hidden" id="admin" v-model="accountType" />
                 </div>
 
                 <Button
                     type="submit"
                     class="mt-4 w-full"
-                    :tabindex="4"
                     :disabled="processing"
-                    data-test="login-button"
                 >
                     <Spinner v-if="processing" />
                     Log in
                 </Button>
             </div>
-
-            <div
-                class="text-center text-sm text-muted-foreground"
-                v-if="canRegister"
-            >
-                Don't have an account?
-                <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
-            </div>
-        </Form>
+        </form>
     </AuthBase>
 </template>

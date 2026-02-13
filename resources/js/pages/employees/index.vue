@@ -1,52 +1,57 @@
-<script setup>
+<script setup lang="ts">
 import Label from '@/components/ui/label/Label.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3'; // useForm is better for validation errors
-// import { useEcho } from '@laravel/echo-vue';
+import { Head } from '@inertiajs/vue3';
 import axios from 'axios';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import '../../../css/style.css';
 
 // 1. Data States
 const showModal = ref(false);
 const isEditing = ref(false);
-const channels = ref([]);
-const clients = ref([]);
+const channels = ref<any[]>([]);
+const clients = ref<any[]>([]);
+const employeesList = ref<any[]>([]);
+const showDeleteModal = ref(false);
+const employeeToDelete = ref<number | null>(null);
+const isProcessing = ref(false);
 
-// const page = usePage();
-// // Access the logged-in user
-// const user = page.props.auth.user;
-// console.log('user:', user); // Should print your user object
+const flashMessage = ref<string | null>(null);
 
-// const echo = useEcho();
+function showMessage(message: string) {
+    flashMessage.value = message;
+    setTimeout(() => (flashMessage.value = null), 3000); // auto-hide after 3s
+}
 
-const props = defineProps({
-    employees: { type: Object, required: true },
-    breadcrumbs: { type: Array, required: false, default: () => [] },
-});
+// 2. Fetch Data
+const reloadEmployees = async () => {
+    try {
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_URL}/api/employees`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        console.log('Employees API response:', data);
+        employeesList.value = data.employees?.data || data.data || [];
+    } catch (e) {
+        console.error('Error fetching employees', e);
+    }
+};
 
-const employeesList = ref(props.employees.data);
-
-// onMounted(() => {
-//     const echoInstance = window.Echo;
-//     if (!echoInstance) return console.error('Echo not ready ' + window.Echo);
-
-//     echoInstance.private('status-updates').listen('UserStatusUpdated', (e) => {
-//         console.log('Event received!', e);
-//         const employee = employeesList.value.find(
-//             (emp) => emp.user.id === e.userId,
-//         );
-//         if (employee) {
-//             employee.user.status = e.status;
-//         }
-//     });
-// });
-
-// 2. Fetch Data (If not using Inertia props for these)
 const handleChannels = async () => {
     try {
-        const response = await axios.get('api/v1/channels/show');
-        channels.value = response.data;
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_URL}/api/channels/show`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        channels.value = data;
     } catch (e) {
         console.error('Error fetching channels', e);
     }
@@ -54,18 +59,28 @@ const handleChannels = async () => {
 
 const handleClients = async () => {
     try {
-        const response = await axios.get('api/v1/clients/show');
-        clients.value = response.data;
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_URL}/api/clients/show`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        clients.value = data;
     } catch (e) {
         console.error('Error fetching clients', e);
     }
 };
 
-handleClients();
-handleChannels();
+onMounted(() => {
+    reloadEmployees();
+    handleClients();
+    handleChannels();
+});
 
-// 4. Form Initialization (using useForm for better Inertia integration)
-const form = useForm({
+// 3. Form Initialization
+const form = ref({
     id: null,
     name: '',
     email: '',
@@ -77,91 +92,141 @@ const form = useForm({
     role: 'employee',
 });
 
-// 5. THE FIX: Filter the local 'channels' ref, not 'props.channels'
+// 4. Computed Channels
 const filteredChannels = computed(() => {
-    if (!form.client_id) return [];
-
-    // Filter the channels fetched via axios
+    if (!form.value.client_id) return [];
     return channels.value.filter(
-        (channel) => channel.client_id == form.client_id,
+        (channel) => channel.client_id == form.value.client_id,
     );
 });
 
-// 6. Modal Logic
+// 5. Modal Logic
 const openModal = () => {
     isEditing.value = false;
-    form.reset();
+    Object.assign(form.value, {
+        id: null,
+        name: '',
+        email: '',
+        phone: '',
+        occupation: '',
+        channel_id: '',
+        client_id: '',
+        password: '',
+        role: 'employee',
+    });
     showModal.value = true;
 };
 
-const editEmployee = (employee) => {
+const editEmployee = (employee: any) => {
     isEditing.value = true;
-    form.id = employee.id;
-    form.name = employee.user.name;
-    form.email = employee.user.email;
-    form.phone = employee.user.phone;
-    form.occupation = employee.user.occupation;
-    form.client_id = employee.client_id;
-    // Pre-select the first channel the employee belongs to
-    form.channel_id = employee.channel?.[0]?.id || '';
+    form.value.id = employee.id;
+    form.value.name = employee.user.name;
+    form.value.email = employee.user.email;
+    form.value.phone = employee.user.phone;
+    form.value.occupation = employee.user.occupation;
+    form.value.client_id = employee.client_id;
+    form.value.channel_id = employee.channel?.[0]?.id || '';
     showModal.value = true;
 };
 
 const closeModal = () => {
     showModal.value = false;
-    form.reset();
 };
 
-// 7. CRUD Actions
-const submitEmployee = () => {
-    if (isEditing.value) {
-        form.put(`/employees/${form.id}`, {
-            onSuccess: () => closeModal(),
-        });
-    } else {
-        form.post('/employees', {
-            onSuccess: () => closeModal(),
-        });
-    }
-};
-
-// Delete Logic
-const showDeleteModal = ref(false);
-const employeeToDelete = ref(null);
-
-const confirmDelete = (id) => {
+// 7. Delete Logic
+const confirmDelete = (id: number) => {
     employeeToDelete.value = id;
     showDeleteModal.value = true;
 };
 
-const executeDelete = () => {
-    router.delete(`/employees/${employeeToDelete.value}`, {
-        onSuccess: () => {
-            showDeleteModal.value = false;
-            employeeToDelete.value = null;
-        },
-    });
+const submitEmployee = async () => {
+    try {
+        if (isEditing.value) {
+            const { data } = await axios.put(
+                `${import.meta.env.VITE_APP_URL}/api/employees/${form.value.id}`,
+                form.value,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                },
+            );
+            showMessage(data.message);
+        } else {
+            const { data } = await axios.post(
+                `${import.meta.env.VITE_APP_URL}/api/employees`,
+                form.value,
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                },
+            );
+            showMessage(data.message);
+
+            // ✅ manually clear fields only for new employee
+            Object.assign(form.value, {
+                id: null,
+                name: '',
+                email: '',
+                phone: '',
+                occupation: '',
+                channel_id: '',
+                client_id: '',
+                password: '',
+                role: 'employee',
+            });
+        }
+
+        closeModal(); // just hides the modal
+        await reloadEmployees();
+    } catch (err) {
+        console.error('Failed to submit employee', err);
+    }
 };
 
-const toggleStatus = (employee) => {
-    // Optimistic UI update or wait for Inertia
-    router.patch(
-        `/users/${employee.user_id}/toggle-status`,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Optional: Toast notification for "Status Updated"
+const executeDelete = async () => {
+    try {
+        const { data } = await axios.delete(
+            `${import.meta.env.VITE_APP_URL}/api/employees/${employeeToDelete.value}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
             },
-        },
-    );
+        );
+        showMessage(data.message);
+        showDeleteModal.value = false;
+        employeeToDelete.value = null;
+        await reloadEmployees();
+    } catch (err) {
+        console.error('Failed to delete employee', err);
+    }
+};
+
+const toggleStatus = async (employee: any) => {
+    try {
+        const { data } = await axios.patch(
+            `${import.meta.env.VITE_APP_URL}/api/users/${employee.user_id}/toggle-status`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        showMessage(data.message);
+        await reloadEmployees();
+    } catch (err) {
+        console.error('Failed to toggle status', err);
+    }
 };
 </script>
 
 <template>
     <Head title="Users" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AppLayout>
         <div
             class="relative flex h-full w-full flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-md"
         >
@@ -302,10 +367,7 @@ const toggleStatus = (employee) => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <input
-                                                type="hidden"
-                                                :v-model="form.employee"
-                                            />
+
                                             <div class="grid gap-2">
                                                 <Label for="clients"
                                                     >Select Client</Label
@@ -313,7 +375,6 @@ const toggleStatus = (employee) => {
                                                 <select
                                                     id="clients"
                                                     v-model="form.client_id"
-                                                    @change="handleClientChange"
                                                     class="focus:ring-opacity-50 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                                                 >
                                                     <option value="" disabled>
@@ -425,10 +486,10 @@ const toggleStatus = (employee) => {
             <div class="overflow-scroll p-0 px-0">
                 <div class="pt-0 pr-4 pb-0 pl-4">
                     <div
-                        v-if="$page.props.flash && $page.props.flash.success"
-                        class="mb-4 rounded bg-green-100 p-2 text-green-800"
+                        v-if="flashMessage"
+                        class="mb-4 rounded bg-green-100 p-2 text-green-700"
                     >
-                        {{ $page.props.flash.success }}
+                        {{ flashMessage }}
                     </div>
                 </div>
                 <table class="mt-0 w-full min-w-max table-auto text-left">
@@ -477,11 +538,7 @@ const toggleStatus = (employee) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr
-                            v-if="
-                                !employees.data || employees.data.length === 0
-                            "
-                        >
+                        <tr v-if="!employeesList || employeesList.length === 0">
                             <td
                                 colspan="9"
                                 class="p-4 text-center text-gray-500"
@@ -490,7 +547,7 @@ const toggleStatus = (employee) => {
                             </td>
                         </tr>
                         <tr
-                            v-for="employee in employees.data"
+                            v-for="employee in employeesList"
                             :key="employee.id"
                             class="hover:bg-gray-50/50"
                         >
@@ -649,7 +706,7 @@ const toggleStatus = (employee) => {
                     </tbody>
                 </table>
             </div>
-            <div
+            <!-- <div
                 class="border-blue-gray-50 flex items-center justify-between border-t p-4"
             >
                 <div class="text-sm text-gray-600">
@@ -683,7 +740,7 @@ const toggleStatus = (employee) => {
                         ></span>
                     </template>
                 </div>
-            </div>
+            </div> -->
         </div>
     </AppLayout>
 

@@ -15,9 +15,8 @@ class ClientController extends Controller
     public function index()
     {
         $clients = Client::orderBy('created_at', 'desc')->paginate(10);
-        // return $clients;
 
-          return Inertia::render('Clients/Index', [
+        return response()->json([
             'clients' => $clients
         ]);
 
@@ -49,9 +48,14 @@ class ClientController extends Controller
             'address' => 'nullable|string',
         ]);
 
-        Client::create($validated);
+        $client = Client::create($validated);
 
-        return redirect()->back()->with('success', 'Client created successfully!');
+          return response()->json([ 
+            'success' => true, 
+            'message' => 'Client created successfully!', 
+            'client' => $client, 
+        ]);
+
     }
 
     /**
@@ -89,26 +93,50 @@ class ClientController extends Controller
 
         $client->update($validated);
 
-        return redirect()->back()->with('success', 'Client updated successfully!');
+        return response()->json([ 
+            'success' => true, 
+            'message' => 'Client updated successfully!', 
+            'client' => $client, 
+        ]);
+
 
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Client $client)
+   public function destroy($id)
     {
+        $client = Client::find($id);
+
+        if (! $client) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Client not found. ' . $id,
+            ], 404);
+        }
+
         $client->delete();
-        return redirect()->back()->with('success', 'Client deleted successfully!');
 
-    }
-
-    public function toggleStatus(Client $client)
-    {
-        $client->update([
-            'is_active' => !$client->is_active
+        return response()->json([
+            'success' => true,
+            'message' => 'Client deleted successfully!',
+            'client' => $client,
         ]);
-
-        return redirect()->back()->with('success', 'Client status updated successfully.');
     }
+
+
+public function toggleStatus(Client $client)
+{
+    $client->update([
+        'is_active' => !$client->is_active,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Client status updated successfully.',
+        'client' => $client,
+    ]);
+}
+
 }
