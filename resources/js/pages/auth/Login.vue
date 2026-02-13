@@ -22,7 +22,9 @@ async function login() {
 
     try {
         // Step 1: Get CSRF cookie
-        await axios.get(`${import.meta.env.VITE_APP_URL}/sanctum/csrf-cookie`);
+        await axios.get(`${import.meta.env.VITE_APP_URL}/sanctum/csrf-cookie`, {
+            withCredentials: true,
+        });
 
         // Step 2: Post to Laravel's /login route (not /api/login)
         await axios.post(`${import.meta.env.VITE_APP_URL}/login`, {
