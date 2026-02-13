@@ -42,7 +42,7 @@ class EmployeeController extends Controller
         $employees = Employee::with(['channel', 'client', 'user'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(10); // Adjust '10' to however many rows you want per page
-                    
+
 
         return Inertia::render('employees/index', [
             'employees' => $employees // Raw data, no resource wrapper
@@ -66,7 +66,7 @@ class EmployeeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string',
             'email' => 'required|email|max:250|unique:users,email',
-            'phone' => 'required|string|max:15',
+            'phone' => 'required|integer|max:15|unique:users,phone',
             'occupation' => 'required|string',
             'password' => 'required|string|min:8',
         ]);
@@ -101,7 +101,7 @@ class EmployeeController extends Controller
 
         });
 
-    
+
 
     }
 
