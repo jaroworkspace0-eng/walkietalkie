@@ -34,7 +34,7 @@ async function login() {
         localStorage.setItem('token', data.token);
 
         // Redirect after login
-        window.location.href = '/dashboard';
+        // window.location.href = '/dashboard';
     } catch (err: any) {
         error.value = err.response?.data?.message || 'Login failed';
     } finally {
