@@ -30,12 +30,22 @@ async function login() {
             },
         );
 
-        // console.log('response.data:', response.data);
-        // console.log('response.data.token:', response.data.token);
+        const token = response.data.token;
 
-        localStorage.setItem('token', response.data.token);
+        // store token
+        localStorage.setItem('token', token);
+
+        // attach token to axios
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        // ⭐ fetch logged in user
+        const userRes = await axios.get('/api/user');
+
+        // store user globally (simple way)
+        localStorage.setItem('user', JSON.stringify(userRes.data));
+
         window.location.href = '/dashboard';
-    } catch (err: any) {
+    } catch (err) {
         error.value = err.response?.data?.message || 'Login failed';
     } finally {
         processing.value = false;

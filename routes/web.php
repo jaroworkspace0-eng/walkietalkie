@@ -17,7 +17,7 @@ Route::get('/', function () {
     return Inertia::render('auth/Login'); 
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+// Route::middleware([])->group(function () {
 Route::get('/dashboard', function(){
     return Inertia::render('Dashboard');
 })->name('dashboard');
@@ -35,9 +35,8 @@ Route::get('channels', function(){
 });
 
 
-
 Route::resource("users", UserController::class);
 Route::get('/search', [SearchController::class, 'index'])->name('search.index');
-});
+// });
 
 require __DIR__.'/settings.php';
