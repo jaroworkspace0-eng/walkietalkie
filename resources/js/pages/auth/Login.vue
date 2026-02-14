@@ -21,20 +21,20 @@ async function login() {
     error.value = null;
 
     try {
-        const { data } = await axios.post(
-            `${import.meta.env.VITE_APP_URL}/login`,
+        const response = await axios.post(
+            `${import.meta.env.VITE_APP_URL}/api/login`,
             {
                 email: email.value,
                 password: password.value,
+                accountType: 'admin',
             },
         );
 
-        // Store the token for later API calls
-        console.log('data.token:', data.token);
-        localStorage.setItem('token', data.token);
+        // console.log('response.data:', response.data);
+        // console.log('response.data.token:', response.data.token);
 
-        // Redirect after login
-        // window.location.href = '/dashboard';
+        localStorage.setItem('token', response.data.token);
+        window.location.href = '/dashboard';
     } catch (err: any) {
         error.value = err.response?.data?.message || 'Login failed';
     } finally {
