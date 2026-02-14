@@ -21,19 +21,20 @@ async function login() {
     error.value = null;
 
     try {
-        // Step 1: Get CSRF cookie
-        await axios.get(`${import.meta.env.VITE_APP_URL}/sanctum/csrf-cookie`, {
-            withCredentials: true,
-        });
+        const { data } = await axios.post(
+            `${import.meta.env.VITE_APP_URL}/login`,
+            {
+                email: email.value,
+                password: password.value,
+            },
+        );
 
-        // Step 2: Post to Laravel's /login route (not /api/login)
-        await axios.post(`${import.meta.env.VITE_APP_URL}/login`, {
-            email: email.value,
-            password: password.value,
-        });
+        // Store the token for later API calls
+        console.log('data.token:', data.token);
+        localStorage.setItem('token', data.token);
 
-        // Laravel sets a session cookie automatically
-        window.location.href = '/dashboard'; // works with auth middleware
+        // Redirect after login
+        window.location.href = '/dashboard';
     } catch (err: any) {
         error.value = err.response?.data?.message || 'Login failed';
     } finally {
