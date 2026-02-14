@@ -148,6 +148,7 @@ class EmployeeController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'occupation' => $validated['occupation'],
+            'phone' => $validated['phone'],
         ];
 
         // Only update password if a new one is provided
