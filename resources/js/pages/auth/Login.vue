@@ -30,11 +30,11 @@ async function login() {
             },
         );
 
-        // console.log('response.data:', response.data);
-        // console.log('response.data.token:', response.data.token);
+        console.log('response.data:', response.data);
+        console.log('response.data.token:', response.data.token);
 
         localStorage.setItem('token', response.data.token);
-        window.location.href = '/dashboard';
+        // window.location.href = '/dashboard';
     } catch (err: any) {
         error.value = err.response?.data?.message || 'Login failed';
     } finally {
