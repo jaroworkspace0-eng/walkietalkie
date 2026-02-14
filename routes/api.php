@@ -89,6 +89,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::resource('employees', EmployeeController::class);
     Route::resource('channels', ChannelController::class);
     Route::get('clients/list', [ClientController::class, 'clients']);
+    Route::get('/channels-list', [ChannelController::class, 'getChannels']);
 
    
 });

@@ -24,6 +24,25 @@ class ChannelController extends Controller
             'channels' => $channels ,
         ]);
     }
+
+// fetch channels for the app
+    public function getChannels(Request $request)
+    {
+        // 1. Get user with relationship (mimicking login)
+        $user = $request->user()->load('employee.channel');
+
+        // 2. Map the data exactly the same way
+        $channels = $user->employee?->channel->map(function($channel) {
+            return [
+                'id' => $channel->id,
+                'name' => $channel->name,
+            ];
+        }) ?? collect([]);
+
+        // 3. Return the array directly
+        return response()->json($channels);
+    }
+
     /**
      * Show the form for creating a new resource.
      */
