@@ -29,7 +29,9 @@ const breadcrumbItems: BreadcrumbItem[] = [
 ];
 
 const page = usePage();
-const user = page.props.auth.user;
+// const user = page.props.auth.user;
+const storedUser = localStorage.getItem('user');
+const user = storedUser ? JSON.parse(storedUser) : {};
 </script>
 
 <template>

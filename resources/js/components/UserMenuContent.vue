@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import UserInfo from '@/components/UserInfo.vue';
 import {
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -40,17 +39,21 @@ const handleLogout = (event: Event) => {
 
     <DropdownMenuSeparator />
 
-    <DropdownMenuGroup>
-        <DropdownMenuItem :as-child="true">
-            <Link class="block w-full" href="/settings" as="button">
-                <Settings class="mr-2 h-4 w-4" />
-                Settings
-            </Link>
-        </DropdownMenuItem>
-    </DropdownMenuGroup>
+    <!-- Settings: plain Link, no dropdown item wrapping -->
+    <div class="px-1">
+        <Link
+            class="flex w-full items-center rounded px-2 py-1 text-sm hover:bg-gray-100"
+            href="/settings"
+            prefetch
+        >
+            <Settings class="mr-2 h-4 w-4" />
+            Settings
+        </Link>
+    </div>
 
     <DropdownMenuSeparator />
 
+    <!-- Logout: keep as DropdownMenuItem so dropdown closes properly -->
     <DropdownMenuItem :as-child="true">
         <button
             class="block w-full text-left"

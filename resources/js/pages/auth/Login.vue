@@ -21,7 +21,8 @@ async function login() {
     error.value = null;
 
     try {
-        const response = await axios.post(
+        // 1️⃣ Login request
+        const { data } = await axios.post(
             `${import.meta.env.VITE_APP_URL}/api/login`,
             {
                 email: email.value,
@@ -30,23 +31,25 @@ async function login() {
             },
         );
 
-        const token = response.data.token;
+        const token = data.token;
 
-        // store token
+        // 2️⃣ Store token & attach to axios globally
         localStorage.setItem('token', token);
-
-        // attach token to axios
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-        // ⭐ fetch logged in user
+        // 3️⃣ Fetch current logged-in user
         const userRes = await axios.get('/api/user');
-
-        // store user globally (simple way)
         localStorage.setItem('user', JSON.stringify(userRes.data));
 
+        // 4️⃣ SPA-safe redirect
+        // Option A: full reload (guaranteed)
         window.location.href = '/dashboard';
-    } catch (err) {
+
+        // Option B: SPA navigation with Inertia
+        // router.visit('/dashboard', { replace: true, preserveState: false })
+    } catch (err: any) {
         error.value = err.response?.data?.message || 'Login failed';
+        console.error(err);
     } finally {
         processing.value = false;
     }
