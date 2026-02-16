@@ -45,7 +45,7 @@ class StatusController extends Controller
             return response()->json([
                 'success' => true,
                 'user_id' => $user->id,
-                'status' => $user->status,
+                'status' => $request->status ,
                 'channel_id' => $request->channel_id,
                 'username' => $user->name
             ], 200);
