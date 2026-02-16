@@ -20,17 +20,13 @@ class StatusController extends Controller
             'status' => $request->status
         ]);
 
-        Log::info('Status::: ' . $request->status);
-        Log::info('UserId::: ' . $request->user_id);
-        Log::info('ChannelId::: ' . $request->channel_id);
-
         // 3. Get the employee relationship
         $employee = $user->employee; // No need for ->first() if it's a HasOne
 
         Log::info('Status: ' . $request->status);
         Log::info('UserId: ' . $request->user_id);
         Log::info('ChannelId: ' . $request->channel_id);
-        Log::info('EmployeeId: ' . $request->employee->id);
+        Log::info('EmployeeId: ' . $employee->id);
 
         if ($employee) {
             // 4. Update the pivot table for the specific channel
