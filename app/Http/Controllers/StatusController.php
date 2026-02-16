@@ -46,7 +46,8 @@ class StatusController extends Controller
                 'success' => true,
                 'user_id' => $user->id,
                 'status' => $user->status,
-                'channel_id' => $request->channel_id
+                'channel_id' => $request->channel_id,
+                'username' => $user->name
             ], 200);
         }
 
