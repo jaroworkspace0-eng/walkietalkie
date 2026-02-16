@@ -40,9 +40,14 @@ class StatusController extends Controller
             // 5. Broadcast the event for real-time UI updates
             broadcast(new UserStatusUpdated($request->user_id, $request->status))->toOthers();
 
-            Log::info('Successfully updated: ');
+            Log::info($user);
 
-            return response()->json(['message' => 'Status updated successfully.'], 200);
+            return response()->json([
+                'success' => true,
+                'user_id' => $user->id,
+                'status' => $user->status,
+                'channel_id' => $request->channel_id
+            ], 200);
         }
 
         return response()->json(['error' => 'Employee profile not found.'], 404);
