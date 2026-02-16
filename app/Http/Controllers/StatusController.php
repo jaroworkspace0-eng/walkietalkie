@@ -20,10 +20,14 @@ class StatusController extends Controller
             'status' => $request->status
         ]);
 
-        Log::info('Status: ' . $request->status);
-        Log::info('UserId: ' . $request->user_id);
+        
         // 3. Get the employee relationship
         $employee = $user->employee; // No need for ->first() if it's a HasOne
+
+        Log::info('Status: ' . $request->status);
+        Log::info('UserId: ' . $request->user_id);
+        Log::info('ChannelId: ' . $request->channel_id);
+        Log::info('EmployeeId: ' . $request->employee->id);
 
         if ($employee) {
             // 4. Update the pivot table for the specific channel
@@ -35,7 +39,9 @@ class StatusController extends Controller
                 ]);
 
             // 5. Broadcast the event for real-time UI updates
-            broadcast(new UserStatusUpdated($user->id, $request->status))->toOthers();
+            broadcast(new UserStatusUpdated($request->user_id, $request->status))->toOthers();
+
+            Log::info('Successfully updated: ');
 
             return response()->json(['message' => 'Status updated successfully.'], 200);
         }
