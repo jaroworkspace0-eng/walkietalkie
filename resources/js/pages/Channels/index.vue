@@ -1,33 +1,94 @@
-<script setup>
+<script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import axios from 'axios';
+import { onMounted, ref } from 'vue';
 import '../../../css/style.css';
 
-// import { type BreadcrumbItem } from '@/types';
-import { Link, router, useForm } from '@inertiajs/vue3';
-import axios from 'axios';
-import { ref } from 'vue';
-
+// --- State ---
 const showModal = ref(false);
-const clients = ref([]);
 const isEditing = ref(false);
+const clients = ref<any[]>([]);
+const channelsList = ref<any[]>([]);
 
 const isConfirmingDeletion = ref(false);
-const channelToDelete = ref(null);
+const channelToDelete = ref<any | null>(null);
+const confirmationName = ref('');
 
-const confirmationName = ref(''); // Stores what the user types
+// --- Feedback & Errors ---
+const flashMessage = ref<string | null>(null);
+const isProcessing = ref(false);
+const errors = ref<{ [key: string]: string[] }>({});
 
-const deleteForm = useForm({});
+// --- Form ---
+const form = ref({
+    id: null,
+    client_id: '',
+    name: '',
+    category: '',
+    type: '',
+});
 
-const handleClients = async () => {
-    const response = await axios.get('api/v1/clients/show');
-    clients.value = response.data;
-    console.log(clients.value);
+// --- Helpers ---
+function showMessage(message: string) {
+    flashMessage.value = message;
+    setTimeout(() => (flashMessage.value = null), 3000);
+}
+
+function resetForm() {
+    form.value = {
+        id: null,
+        client_id: '',
+        name: '',
+        category: '',
+        type: '',
+    };
+}
+
+// --- API Fetch ---
+const reloadClients = async () => {
+    try {
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_URL}/api/clients/show`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        clients.value = data;
+    } catch (e) {
+        console.error('Error fetching clients', e);
+    }
 };
-handleClients();
 
+const reloadChannels = async () => {
+    try {
+        const { data } = await axios.get(
+            `${import.meta.env.VITE_APP_URL}/api/channels`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+
+        // ✅ Use the paginator's data array
+        channelsList.value = data.channels.data;
+        console.log('Channels:', channelsList.value);
+    } catch (e) {
+        console.error('Error fetching channels', e);
+    }
+};
+
+onMounted(() => {
+    reloadClients();
+    reloadChannels();
+});
+
+// --- Modal Logic ---
 const openModal = () => {
-    isEditing.value = false; // Ensure we aren't in edit mode
-    resetForm(); // Clear old data
+    isEditing.value = false;
+    resetForm();
     showModal.value = true;
 };
 
@@ -38,87 +99,103 @@ const closeModal = () => {
     confirmationName.value = '';
 };
 
-const deleteChannel = async () => {
-    router.delete(`/channels/${channelToDelete.value.id}`, {
-        onSuccess: () => {
-            closeModal();
-        },
-    });
-};
-
-defineProps({
-    channels: {
-        type: Object,
-        required: true,
-    },
-});
-
-const form = ref({
-    id: null, // Add this
-    client_id: '',
-    name: '',
-    category: '',
-    type: '',
-});
-
-const createChannel = () => {
-    router.post('/channels', form.value, {
-        onSuccess: () => {
-            resetForm();
-            showModal.value = false;
-            console.log('Channel created successfully');
-        },
-    });
-};
-
-const updateChannel = () => {
-    console.log('Form ID being sent:', form.value.id);
-    console.log('Full Form Data:', form.value);
-
-    if (!form.value.id) {
-        alert(
-            "Error: No ID found. This will cause a 'Create' instead of an 'Update'.",
+// --- Channel Actions ---
+async function createChannel() {
+    try {
+        isProcessing.value = true;
+        await axios.post(
+            `${import.meta.env.VITE_APP_URL}/api/channels`,
+            form.value,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
         );
-        return;
+        showMessage('Channel created successfully');
+        resetForm();
+        showModal.value = false;
+        await reloadChannels();
+    } catch (err: any) {
+        errors.value = err.response?.data?.errors || {};
+    } finally {
+        isProcessing.value = false;
     }
-
-    router.put(`/channels/${form.value.id}`, form.value, {
-        onSuccess: () => {
-            showModal.value = false;
-            isEditing.value = false;
-            resetForm();
-        },
-    });
-};
-
-function resetForm() {
-    form.value = {
-        id: null,
-        client_id: '',
-        name: '',
-        category: '',
-        type: '',
-    };
-    // isEditing.value = false; // Optional: reset here too for safety
 }
 
-const toggleChannelStatus = (channel) => {
-    router.patch(
-        `/channels/${channel.id}/toggle-status`,
-        {},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                // Optional: add a notification toast here
+async function updateChannel() {
+    if (!form.value.id) {
+        alert('Error: No ID found. Cannot update.');
+        return;
+    }
+    try {
+        isProcessing.value = true;
+        await axios.put(
+            `${import.meta.env.VITE_APP_URL}/api/channels/${form.value.id}`,
+            form.value,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
             },
-        },
-    );
-};
+        );
+        showMessage('Channel updated successfully');
+        showModal.value = false;
+        isEditing.value = false;
+        resetForm();
+        await reloadChannels();
+    } catch (err: any) {
+        errors.value = err.response?.data?.errors || {};
+    } finally {
+        isProcessing.value = false;
+    }
+}
 
-// Assuming you have a form state for the modal
-const editChannel = (channel) => {
-    isEditing.value = true; // Set this first!
+async function deleteChannel() {
+    try {
+        isProcessing.value = true;
+        await axios.delete(
+            `${import.meta.env.VITE_APP_URL}/api/channels/${channelToDelete.value.id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        showMessage('Channel deleted successfully');
+        closeModal();
+        await reloadChannels();
+    } catch (err: any) {
+        errors.value = err.response?.data?.errors || {};
+    } finally {
+        isProcessing.value = false;
+    }
+}
 
+async function toggleChannelStatus(channel: any) {
+    try {
+        isProcessing.value = true;
+        await axios.patch(
+            `${import.meta.env.VITE_APP_URL}/api/channels/${channel.id}/toggle-status`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            },
+        );
+        showMessage('Channel status updated');
+        await reloadChannels();
+    } catch (err: any) {
+        errors.value = err.response?.data?.errors || {};
+    } finally {
+        isProcessing.value = false;
+    }
+}
+
+// --- Editing ---
+const editChannel = (channel: any) => {
+    isEditing.value = true;
     form.value = {
         id: channel.id,
         name: channel.name,
@@ -126,22 +203,21 @@ const editChannel = (channel) => {
         type: channel.type,
         client_id: channel.client_id || channel.client?.id,
     };
-
     showModal.value = true;
 };
 
 const handleSubmit = () => {
-    if (isEditing.value == true) {
-        updateChannel(); // If editing is true, update
+    if (isEditing.value) {
+        updateChannel();
     } else {
-        createChannel(); // If editing is false, create
+        createChannel();
     }
 };
 
-const confirmDelete = (channel) => {
-    channelToDelete.value = channel; // Store the whole object, not just ID
-    confirmationName.value = ''; // Reset input
-    isConfirmingDeletion.value = true;
+const confirmDelete = (channel: any) => {
+    channelToDelete.value = channel;
+    confirmationName.value = '';
+    isConfirmingDeletion.value = true; // <-- this is what shows the modal
 };
 </script>
 
@@ -335,10 +411,10 @@ const confirmDelete = (channel) => {
             <div class="overflow-scroll p-0 px-0">
                 <div class="pt-0 pr-4 pb-0 pl-4">
                     <div
-                        v-if="$page.props.flash && $page.props.flash.success"
-                        class="mb-4 rounded bg-green-100 p-2 text-green-800"
+                        v-if="flashMessage"
+                        class="mb-4 rounded bg-green-100 p-2 text-green-700"
                     >
-                        {{ $page.props.flash.success }}
+                        {{ flashMessage }}
                     </div>
                 </div>
                 <table class="mt-0 w-full min-w-max table-auto text-left">
@@ -401,7 +477,7 @@ const confirmDelete = (channel) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="!channels.data || channels.data.length === 0">
+                        <tr v-if="channelsList.length === 0">
                             <td
                                 colspan="9"
                                 class="p-4 text-center text-gray-500"
@@ -410,7 +486,7 @@ const confirmDelete = (channel) => {
                             </td>
                         </tr>
                         <tr
-                            v-for="channel in channels.data"
+                            v-for="channel in channelsList"
                             :key="channel.id"
                             class="hover:bg-gray-50/50"
                         >
@@ -527,7 +603,7 @@ const confirmDelete = (channel) => {
                     </tbody>
                 </table>
             </div>
-            <div
+            <!-- <div
                 class="border-blue-gray-50 flex items-center justify-between border-t p-4"
             >
                 <div class="text-sm text-gray-600">
@@ -561,13 +637,13 @@ const confirmDelete = (channel) => {
                         ></span>
                     </template>
                 </div>
-            </div>
+            </div> -->
         </div>
     </AppLayout>
 
     <div
         v-if="isConfirmingDeletion"
-        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
+        class="modal fixed inset-0 z-[60] flex items-center justify-center bg-black/50"
     >
         <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
             <h2 class="text-lg font-bold text-gray-900">Confirm Deletion</h2>
@@ -599,16 +675,12 @@ const confirmDelete = (channel) => {
                 <button
                     @click="deleteChannel"
                     :disabled="
-                        deleteForm.processing ||
+                        isProcessing ||
                         confirmationName !== channelToDelete?.name
                     "
                     class="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
                 >
-                    {{
-                        deleteForm.processing
-                            ? 'Deleting...'
-                            : 'Yes, Delete Channel'
-                    }}
+                    {{ isProcessing ? 'Deleting...' : 'Yes, Delete Channel' }}
                 </button>
             </div>
         </div>

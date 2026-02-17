@@ -27,18 +27,34 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
-        $request->user()->fill($request->validated());
+public function update(ProfileUpdateRequest $request)
+{
+    $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+    $user->fill($request->validated());
 
-        $request->user()->save();
-
-        return to_route('profile.edit');
+    if ($user->isDirty('email')) {
+        $user->email_verified_at = null;
     }
+
+    $user->save();
+
+    // Redirect back to profile page with a flash message
+    return redirect()->route('profile.edit')->with('status', 'Profile updated successfully');
+}
+
+/**
+ * Get the user from the API token.
+ */
+private function getUserFromToken(Request $request)
+{
+    $token = $request->bearerToken();
+
+    return \App\Models\User::whereHas('tokens', function ($q) use ($token) {
+        $q->where('id', $token);
+    })->firstOrFail();
+}
+
 
     /**
      * Delete the user's profile.

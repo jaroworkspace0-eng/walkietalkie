@@ -21,7 +21,9 @@ class Employee extends Model
 
 
     public function channel() {
-        return $this->belongsToMany(Channel::class)->withTimestamps();
+        return $this->belongsToMany(Channel::class)
+        ->withPivot('is_online', 'last_seen')
+        ->withTimestamps();
         // return $this->belongsTo(Channel::class);
     }
 

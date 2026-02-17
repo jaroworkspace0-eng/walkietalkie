@@ -13,28 +13,36 @@ class ChannelController extends Controller
     /**
      * Display a listing of the resource.
      */
-    // public function index()
-    // {
-    //     $channel = Channel::all();
-    //     $channel->load('client');
-
-    //     // return ChannelResource::collection($channel);
-
-    //      return Inertia::render('Channels/index', [
-    //         'channels' => ChannelResource::collection($channel)
-    //     ]);
-    // }
+   
     public function index()
     {
         $channels = Channel::with('client') 
                     ->orderBy('created_at', 'desc')
                     ->paginate(10); 
 
-        return Inertia::render('Channels/index', [
-            // This keeps the structure flat: channels.data, channels.links, channels.from
-            'channels' => $channels 
+        return response()->json([
+            'channels' => $channels ,
         ]);
     }
+
+// fetch channels for the app
+    public function getChannels(Request $request)
+    {
+        // 1. Get user with relationship (mimicking login)
+        $user = $request->user()->load('employee.channel');
+
+        // 2. Map the data exactly the same way
+        $channels = $user->employee?->channel->map(function($channel) {
+            return [
+                'id' => $channel->id,
+                'name' => $channel->name,
+            ];
+        }) ?? collect([]);
+
+        // 3. Return the array directly
+        return response()->json($channels);
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -55,9 +63,14 @@ class ChannelController extends Controller
             'client_id' => 'required',
         ]);
 
-        Channel::create($validated);
+        $channel = Channel::create($validated);
 
-        return redirect()->back()->with('success', 'Channel created successfully!');
+         return response()->json([
+            'success' => true,
+            'message' => 'Channel created successfully!',
+            'channel' => $channel,
+        ]);
+
     }
 
     /**
@@ -94,7 +107,12 @@ class ChannelController extends Controller
 
         $channel->update($validated);
 
-        return redirect()->back()->with('success', 'Channel updated successful.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Channel updated successful.',
+            'channel' => $channel,
+        ]);
+
     }
 
     /**
@@ -104,7 +122,12 @@ class ChannelController extends Controller
     {
         $channel->delete();
 
-            return redirect()->back()->with('success', 'Channel deleted successfully.');
+         return response()->json([
+            'success' => true,
+            'message' => 'Channel deleted successfully.',
+            'channel' => $channel,
+        ]);
+
     }
 
     public function toggleStatus(Channel $channel)
@@ -114,7 +137,34 @@ class ChannelController extends Controller
             'is_active' => !$channel->is_active
         ]);
 
-        return redirect()->back()->with('success', 'Channels status updated successfully.');
+         return response()->json([
+            'success' => true,
+            'message' => 'Channels status updated successfully.',
+            'channel' => $channel,
+        ]);
+
         
     }
+
+public function getUnits(Channel $channel)
+{
+    $units = $channel->employees()->with('user')->get();
+
+    $formattedUnits = $units->mapWithKeys(function ($unit) {
+        if (!$unit->user) return [];
+
+        // 🔑 Use the ID as the key to prevent overwriting
+        return [
+            $unit->user_id => [ 
+                'userId' => $unit->user->id,
+                'name'     => $unit->user->name,
+                'isOnline'   => $unit->user->status ?? 'offline',
+                'lastSeen' => $unit->pivot->last_seen ?? null,
+                'role'     => $unit->user->occupation ?? 'Guard',
+            ]
+        ];
+    });
+
+    return response()->json($formattedUnits);
+}
 }

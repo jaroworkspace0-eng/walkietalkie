@@ -11,10 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'deleted_at')) {
-                $table->softDeletes();
-            }
+        Schema::table('channel_employee', function (Blueprint $table) {
+            $table->dateTime('last_seen')->nullable()->after('is_online');
         });
     }
 
@@ -23,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropSoftDeletes();
+        Schema::table('channel_employee', function (Blueprint $table) {
+            $table->dropColumn('last_seen');
         });
     }
 };

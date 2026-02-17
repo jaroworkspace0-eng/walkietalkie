@@ -3,7 +3,9 @@
 use App\Http\Controllers\BroadcastAudioController;
 use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
@@ -32,7 +34,7 @@ Route::post('/login', function (Request $request) {
     }
 
     // 2. Block Admins
-    if ($user->role === 'admin') {
+    if ($user->role === 'admin' && $request->accountType !== 'admin') {
         return response()->json([
             'status' => 'error',
             'message' => 'Access denied. Admins must use the web dashboard.'
@@ -46,27 +48,21 @@ Route::post('/login', function (Request $request) {
         ], 403);
     }
 
-    // 3. Security: Revoke old tokens before creating a new one (prevents token bloating)
     $user->tokens()->delete();
     $token = $user->createToken('mobile')->plainTextToken;
 
-    // 4. Clean Data Extraction
-    // Use optional chaining (?) and collect the names
-    $channels = $user->employee?->channel->pluck('name') ?? collect([]);
+    $channels = $user->employee?->channel->map(function($channel) {
+        return [
+            'id' => $channel->id,
+            'name' => $channel->name,
+            // Assuming your Channel model has a relationship to a Company/Client
+        ];
+    }) ?? collect([]);
 
-    Log::info("Login Success - User: {$user->name} | Channels: " . $channels->implode(', '));
-    Log::info("User ID: {$user->id} logged in via mobile.");
-    Log::info("Generated Token: {$token}");
-    log::info("User Details: " . json_encode([
-        'name' => $user->name,
-        'email' => $user->email,
-        'phone' => $user->phone,
-        'occupation' => $user->occupation,
-        'user_id' => $user->id,
-    ]));
 
     return response()->json([
         'user' => [
+            'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'phone' => $user->phone,
@@ -78,42 +74,38 @@ Route::post('/login', function (Request $request) {
     ]);
 });
 
-Route::post('/broadcast-audio', [BroadcastAudioController::class, 'store'])
-     ->middleware('auth:sanctum');
 
-// Route::middleware('auth:sanctum')->post('/broadcast-audio', function (Request $request) {
-//     $request->validate([
-//         'audio' => 'required|file|mimes:mp3,wav,m4a',
-//     ]);
-
-//     $file = $request->file('audio');
-//     $path = $file->store('public/audio');
-
-//     // Return the public URL
-//     $url = Storage::url($path);
-
-//     return response()->json([
-//         'message' => 'Audio uploaded successfully',
-//         'url' => $url,
-//     ]);
-// });
-
-Route::get('/user', function (Request $request) {
+Route::middleware(['auth:sanctum'])->group(function () { 
+    Route::get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:sanctum');
+});
+    Route::post('/broadcast-audio', [BroadcastAudioController::class, 'store'])->name('broadcast.audio');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('index.dashboard');
+    Route::post('/user/update-status', [StatusController::class, 'updateStatus']) ->name('user.update-status');
+    Route::resource('clients', ClientController::class);
+    Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::patch('/channels/{channel}/toggle-status', [ChannelController::class, 'toggleStatus']);
+    Route::patch('/clients/{client}/toggle-status', [ClientController::class, 'toggleStatus']);
+    Route::resource('employees', EmployeeController::class);
+    Route::resource('channels', ChannelController::class);
+    Route::get('clients/list', [ClientController::class, 'clients']);
+    Route::get('/channels-list', [ChannelController::class, 'getChannels']);
 
-Route::post('/user/update-status', [StatusController::class, 'updateStatus'])
-    ->middleware('auth:sanctum');
-
+   
+});
 
 // Route::resource("employees", EmployeeController::class);
 Route::prefix('v1')->name('api.')->group(function () {
-    Route::apiResource('employees', EmployeeController::class);
-    Route::resource('clients', ClientController::class);
-    Route::resource('channels', ChannelController::class);
-    Route::get('clients/list', [ClientController::class, 'clients']);
+    
+    
+    Route::get('/search', [SearchController::class, 'index'])->name('search.index');
+
+    // Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
 });
 
+Route::get('channels/{channel}/units', [ChannelController::class, 'getUnits']);
 
 
+
+// 2p&+[085DiEc
 
