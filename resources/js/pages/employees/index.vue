@@ -27,7 +27,7 @@ function showMessage(message: string) {
 const reloadEmployees = async () => {
     try {
         const { data } = await axios.get(
-            `${import.meta.env.VITE_APP_URL}/api/employees`,
+            `${import.meta.env.VITE_APP_URL}/api/employees?status=offline`,
             {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
