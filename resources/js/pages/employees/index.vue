@@ -238,7 +238,7 @@ const toggleStatus = async (employee: any) => {
                         <p
                             class="mt-1 block font-sans text-base leading-relaxed font-normal text-gray-700 antialiased"
                         >
-                            Employees
+                            Users
                         </p>
                     </div>
                     <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -247,7 +247,7 @@ const toggleStatus = async (employee: any) => {
                             type="button"
                             @click="openModal"
                         >
-                            Add Employee
+                            Add Users
                         </button>
                         <form @submit.prevent="submitEmployee()">
                             <div v-if="showModal">

@@ -33,11 +33,7 @@ const mainNavItems: NavItem[] = [
         href: '/clients',
         icon: Building,
     },
-    {
-        title: 'Employees',
-        href: '/employees',
-        icon: Briefcase,
-    },
+
     //  {
     //     title: 'Users',
     //     href: '/users',
@@ -47,6 +43,11 @@ const mainNavItems: NavItem[] = [
         title: 'Channels',
         href: '/channels',
         icon: ArrowsUpFromLineIcon,
+    },
+       {
+        title: 'Users',
+        href: '/employees',
+        icon: Briefcase,
     },
 ];
 
