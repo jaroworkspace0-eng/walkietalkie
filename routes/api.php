@@ -34,10 +34,17 @@ Route::post('/login', function (Request $request) {
     }
 
     // 2. Block Admins
-    if ($user->role === 'admin' && $request->accountType !== 'admin') {
+    if ($user->role === 'admin' && $request->source !== 'web') {
         return response()->json([
             'status' => 'error',
             'message' => 'Access denied. Admins must use the web dashboard.'
+        ], 403);
+    }
+
+     if ($user->role === 'employee' && $request->source !== 'app') {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Access denied. Employees must use the mobile app.'
         ], 403);
     }
 

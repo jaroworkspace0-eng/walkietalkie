@@ -27,7 +27,7 @@ async function login() {
             {
                 email: email.value,
                 password: password.value,
-                accountType: 'admin',
+                source: 'web',
             },
         );
 
