@@ -15,30 +15,43 @@ const employeesList = ref<any[]>([]);
 const showDeleteModal = ref(false);
 const employeeToDelete = ref<number | null>(null);
 const isProcessing = ref(false);
+const loading = ref(false);
 
 const flashMessage = ref<string | null>(null);
+const errors = ref<Record<string, string[]>>({});
 
 function showMessage(message: string) {
     flashMessage.value = message;
     setTimeout(() => (flashMessage.value = null), 3000); // auto-hide after 3s
 }
 
+const employees = ref<any>({
+    data: [],
+    from: 0,
+    to: 0,
+    total: 0,
+    links: [],
+});
+
 // 2. Fetch Data
-const reloadEmployees = async () => {
+const reloadEmployees = async (url?: string) => {
     try {
         const params = new URLSearchParams(window.location.search);
         const status = params.get('status'); // "online" or "offline"
-        const { data } = await axios.get(
-            `${import.meta.env.VITE_APP_URL}/api/employees`,
-            {
-                params: { status },
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
+
+        // If a pagination link is clicked, use that URL directly
+        const endpoint = url || `${import.meta.env.VITE_APP_URL}/api/employees`;
+
+        const { data } = await axios.get(endpoint, {
+            params: { status }, // keep filter applied
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
-        );
+        });
+
         console.log('Employees API response:', data);
-        employeesList.value = data.employees?.data || data.data || [];
+        employees.value = data.employees; // full paginator object
+        employeesList.value = data.employees.data; // just the records
     } catch (e) {
         console.error('Error fetching employees', e);
     }
@@ -144,6 +157,7 @@ const confirmDelete = (id: number) => {
 
 const submitEmployee = async () => {
     try {
+        loading.value = true;
         if (isEditing.value) {
             const { data } = await axios.put(
                 `${import.meta.env.VITE_APP_URL}/api/employees/${form.value.id}`,
@@ -166,6 +180,7 @@ const submitEmployee = async () => {
                 },
             );
             showMessage(data.message);
+            errors.value = {};
 
             // ✅ manually clear fields only for new employee
             Object.assign(form.value, {
@@ -183,8 +198,11 @@ const submitEmployee = async () => {
 
         closeModal(); // just hides the modal
         await reloadEmployees();
-    } catch (err) {
+    } catch (err: any) {
+        errors.value = err.response.data.errors;
         console.error('Failed to submit employee', err);
+    } finally {
+        loading.value = false;
     }
 };
 
@@ -250,7 +268,7 @@ const toggleStatus = async (employee: any) => {
                             type="button"
                             @click="openModal"
                         >
-                            Add Users
+                            Add User
                         </button>
                         <form @submit.prevent="submitEmployee()">
                             <div v-if="showModal">
@@ -265,8 +283,8 @@ const toggleStatus = async (employee: any) => {
                                         <h2 class="text-heading">
                                             {{
                                                 isEditing
-                                                    ? 'Edit Employee'
-                                                    : 'Add Employee'
+                                                    ? 'Edit User'
+                                                    : 'Add User'
                                             }}
                                         </h2>
 
@@ -284,16 +302,10 @@ const toggleStatus = async (employee: any) => {
                                                         v-model="form.name"
                                                     />
                                                     <p
-                                                        v-if="
-                                                            $page.props.errors
-                                                                .name
-                                                        "
+                                                        v-if="errors.name"
                                                         class="text-sm text-red-600"
                                                     >
-                                                        {{
-                                                            $page.props.errors
-                                                                .name
-                                                        }}
+                                                        {{ errors.name[0] }}
                                                     </p>
                                                 </div>
                                                 <div class="grid gap-2">
@@ -306,16 +318,10 @@ const toggleStatus = async (employee: any) => {
                                                         v-model="form.email"
                                                     />
                                                     <p
-                                                        v-if="
-                                                            $page.props.errors
-                                                                .email
-                                                        "
+                                                        v-if="errors.email"
                                                         class="text-sm text-red-600"
                                                     >
-                                                        {{
-                                                            $page.props.errors
-                                                                .email
-                                                        }}
+                                                        {{ errors.email[0] }}
                                                     </p>
                                                 </div>
                                             </div>
@@ -333,16 +339,10 @@ const toggleStatus = async (employee: any) => {
                                                         v-model="form.phone"
                                                     />
                                                     <p
-                                                        v-if="
-                                                            $page.props.errors
-                                                                .phone
-                                                        "
+                                                        v-if="errors.phone"
                                                         class="text-sm text-red-600"
                                                     >
-                                                        {{
-                                                            $page.props.errors
-                                                                .phone
-                                                        }}
+                                                        {{ errors.phone[0] }}
                                                     </p>
                                                 </div>
                                                 <div class="grid gap-2">
@@ -357,15 +357,11 @@ const toggleStatus = async (employee: any) => {
                                                         "
                                                     />
                                                     <p
-                                                        v-if="
-                                                            $page.props.errors
-                                                                .occupation
-                                                        "
+                                                        v-if="errors.occupation"
                                                         class="text-sm text-red-600"
                                                     >
                                                         {{
-                                                            $page.props.errors
-                                                                .occupation
+                                                            errors.occupation[0]
                                                         }}
                                                     </p>
                                                 </div>
@@ -373,7 +369,7 @@ const toggleStatus = async (employee: any) => {
 
                                             <div class="grid gap-2">
                                                 <Label for="clients"
-                                                    >Select Client</Label
+                                                    >Client</Label
                                                 >
                                                 <select
                                                     id="clients"
@@ -392,19 +388,15 @@ const toggleStatus = async (employee: any) => {
                                                     </option>
                                                 </select>
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.name
-                                                    "
+                                                    v-if="errors.client_id"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.name
-                                                    }}
+                                                    {{ errors.client_id[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
                                                 <Label for="channels"
-                                                    >Select Channel
+                                                    >Channel
                                                 </Label>
                                                 <select
                                                     v-model="form.channel_id"
@@ -424,20 +416,16 @@ const toggleStatus = async (employee: any) => {
                                                     </option>
                                                 </select>
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.name
-                                                    "
+                                                    v-if="errors.channel_id"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.name
-                                                    }}
+                                                    {{ errors.channel_id[0] }}
                                                 </p>
                                             </div>
 
                                             <div class="grid gap-3">
                                                 <Label for="password"
-                                                    >Set Password</Label
+                                                    >Set New Password</Label
                                                 >
                                                 <input
                                                     id="password"
@@ -445,16 +433,10 @@ const toggleStatus = async (employee: any) => {
                                                     v-model="form.password"
                                                 />
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors
-                                                            .password
-                                                    "
+                                                    v-if="errors.password"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors
-                                                            .password
-                                                    }}
+                                                    {{ errors.password[0] }}
                                                 </p>
                                             </div>
 
@@ -468,13 +450,27 @@ const toggleStatus = async (employee: any) => {
                                                 </button>
                                                 <button
                                                     type="submit"
-                                                    class="save-btn"
+                                                    class="save-btn flex items-center justify-center"
+                                                    :disabled="loading"
                                                 >
-                                                    {{
-                                                        isEditing
-                                                            ? 'Update Employee'
-                                                            : 'Add Employee'
-                                                    }}
+                                                    <!-- Spinner only when loading -->
+                                                    <span
+                                                        v-if="loading"
+                                                        class="loader mr-2"
+                                                    ></span>
+
+                                                    <!-- Label changes depending on loading -->
+                                                    <span>
+                                                        {{
+                                                            loading
+                                                                ? isEditing
+                                                                    ? 'Updating...'
+                                                                    : 'Adding...'
+                                                                : isEditing
+                                                                  ? 'Update User'
+                                                                  : 'Add User'
+                                                        }}
+                                                    </span>
                                                 </button>
                                             </div>
                                         </div>
@@ -709,7 +705,7 @@ const toggleStatus = async (employee: any) => {
                     </tbody>
                 </table>
             </div>
-            <!-- <div
+            <div
                 class="border-blue-gray-50 flex items-center justify-between border-t p-4"
             >
                 <div class="text-sm text-gray-600">
@@ -722,11 +718,10 @@ const toggleStatus = async (employee: any) => {
                         v-for="(link, index) in employees.links"
                         :key="index"
                     >
-                        <Link
+                        <button
                             v-if="link.url"
-                            :href="link.url"
+                            @click="reloadEmployees(link.url)"
                             v-html="link.label"
-                            preserve-scroll
                             class="inline-block min-w-[40px] rounded border px-3 py-1 text-center transition-all duration-200"
                             :class="{
                                 'border-blue-500 bg-blue-500 text-white':
@@ -734,16 +729,16 @@ const toggleStatus = async (employee: any) => {
                                 'border-gray-300 bg-white text-blue-500 hover:bg-gray-50':
                                     !link.active,
                             }"
-                        ></Link>
+                        />
 
                         <span
                             v-else
                             v-html="link.label"
                             class="inline-block min-w-[40px] cursor-not-allowed rounded border border-gray-300 bg-gray-200 px-3 py-1 text-center text-gray-500"
-                        ></span>
+                        />
                     </template>
                 </div>
-            </div> -->
+            </div>
         </div>
     </AppLayout>
 
@@ -775,3 +770,23 @@ const toggleStatus = async (employee: any) => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.loader {
+    border: 2px solid #f3f3f3; /* Light grey background */
+    border-top: 2px solid #3498db; /* Blue top border */
+    border-radius: 50%; /* Make it round */
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite; /* Spin animation */
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+</style>

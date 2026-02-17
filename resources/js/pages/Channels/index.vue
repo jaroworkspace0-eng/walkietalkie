@@ -61,20 +61,28 @@ const reloadClients = async () => {
     }
 };
 
-const reloadChannels = async () => {
-    try {
-        const { data } = await axios.get(
-            `${import.meta.env.VITE_APP_URL}/api/channels`,
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-            },
-        );
+const channels = ref<any>({
+    data: [],
+    from: 0,
+    to: 0,
+    total: 0,
+    links: [],
+    current_page: 1,
+    last_page: 1,
+});
 
-        // ✅ Use the paginator's data array
-        channelsList.value = data.channels.data;
-        console.log('Channels:', channelsList.value);
+const reloadChannels = async (url?: string) => {
+    try {
+        const endpoint = url || `${import.meta.env.VITE_APP_URL}/api/channels`;
+
+        const { data } = await axios.get(endpoint, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+        });
+
+        channels.value = data.channels; // ✅ full paginator object
+        console.log('Channels:', channels.value.data);
     } catch (e) {
         console.error('Error fetching channels', e);
     }
@@ -112,6 +120,7 @@ async function createChannel() {
                 },
             },
         );
+        errors.value = {};
         showMessage('Channel created successfully');
         resetForm();
         showModal.value = false;
@@ -139,6 +148,8 @@ async function updateChannel() {
                 },
             },
         );
+
+        errors.value = {};
         showMessage('Channel updated successfully');
         showModal.value = false;
         isEditing.value = false;
@@ -224,7 +235,7 @@ const confirmDelete = (channel: any) => {
 <template>
     <Head title="Channels" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
+    <AppLayout>
         <div
             class="relative flex h-full w-full flex-col rounded-xl bg-white bg-clip-border text-gray-700 shadow-md"
         >
@@ -268,7 +279,7 @@ const confirmDelete = (channel: any) => {
                                         <div class="grid gap-4">
                                             <div class="grid gap-3">
                                                 <Label for="name-1"
-                                                    >Channel Name
+                                                    >Name
                                                 </Label>
                                                 <input
                                                     id="name-1"
@@ -276,14 +287,10 @@ const confirmDelete = (channel: any) => {
                                                     v-model="form.name"
                                                 />
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.name
-                                                    "
+                                                    v-if="errors.name"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.name
-                                                    }}
+                                                    {{ errors.name[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
@@ -296,21 +303,15 @@ const confirmDelete = (channel: any) => {
                                                     v-model="form.category"
                                                 />
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors
-                                                            .category
-                                                    "
+                                                    v-if="errors.category"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors
-                                                            .category
-                                                    }}
+                                                    {{ errors.category[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
                                                 <Label for="name-1"
-                                                    >Select Client</Label
+                                                    >Client</Label
                                                 >
                                                 <select
                                                     id="post-client"
@@ -329,16 +330,10 @@ const confirmDelete = (channel: any) => {
                                                     </option>
                                                 </select>
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors
-                                                            .client_id
-                                                    "
+                                                    v-if="errors.client_id"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors
-                                                            .client_id
-                                                    }}
+                                                    {{ errors.client_id[0] }}
                                                 </p>
                                             </div>
                                             <div class="grid gap-3">
@@ -365,14 +360,10 @@ const confirmDelete = (channel: any) => {
                                                     </option>
                                                 </select>
                                                 <p
-                                                    v-if="
-                                                        $page.props.errors.type
-                                                    "
+                                                    v-if="errors.type"
                                                     class="text-sm text-red-600"
                                                 >
-                                                    {{
-                                                        $page.props.errors.type
-                                                    }}
+                                                    {{ errors.type[0] }}
                                                 </p>
                                             </div>
                                             <div class="flex w-max items-end">
@@ -384,12 +375,24 @@ const confirmDelete = (channel: any) => {
                                                     Cancel
                                                 </button>
 
-                                                <button class="save-btn">
-                                                    {{
-                                                        isEditing
-                                                            ? 'Update Channel'
-                                                            : 'Add Channel'
-                                                    }}
+                                                <button
+                                                    class="save-btn flex items-center justify-center"
+                                                >
+                                                    <span
+                                                        v-if="isProcessing"
+                                                        class="loader mr-2"
+                                                    ></span>
+                                                    <span>
+                                                        {{
+                                                            isProcessing
+                                                                ? isEditing
+                                                                    ? 'Updating...'
+                                                                    : 'Adding...'
+                                                                : isEditing
+                                                                  ? 'Update Channel'
+                                                                  : 'Add Channel'
+                                                        }}
+                                                    </span>
                                                 </button>
 
                                                 <!-- <button
@@ -477,7 +480,7 @@ const confirmDelete = (channel: any) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="channelsList.length === 0">
+                        <tr v-if="channels.data.length === 0">
                             <td
                                 colspan="9"
                                 class="p-4 text-center text-gray-500"
@@ -486,7 +489,7 @@ const confirmDelete = (channel: any) => {
                             </td>
                         </tr>
                         <tr
-                            v-for="channel in channelsList"
+                            v-for="channel in channels.data"
                             :key="channel.id"
                             class="hover:bg-gray-50/50"
                         >
@@ -603,24 +606,25 @@ const confirmDelete = (channel: any) => {
                     </tbody>
                 </table>
             </div>
-            <!-- <div
+            <div
                 class="border-blue-gray-50 flex items-center justify-between border-t p-4"
             >
+                <!-- Pagination info -->
                 <div class="text-sm text-gray-600">
                     Showing {{ channels.from || 0 }} to
-                    {{ channels.to || 0 }} of {{ channels.total }} entries
+                    {{ channels.to || 0 }} of {{ channels.total || 0 }} entries
                 </div>
 
+                <!-- Pagination links -->
                 <div class="flex flex-nowrap space-x-2">
                     <template
                         v-for="(link, index) in channels.links"
                         :key="index"
                     >
-                        <Link
+                        <button
                             v-if="link.url"
-                            :href="link.url"
+                            @click="reloadChannels(link.url)"
                             v-html="link.label"
-                            preserve-scroll
                             class="inline-block min-w-[40px] rounded border px-3 py-1 text-center transition-all duration-200"
                             :class="{
                                 'border-blue-500 bg-blue-500 text-white':
@@ -628,16 +632,15 @@ const confirmDelete = (channel: any) => {
                                 'border-gray-300 bg-white text-blue-500 hover:bg-gray-50':
                                     !link.active,
                             }"
-                        ></Link>
-
+                        />
                         <span
                             v-else
                             v-html="link.label"
                             class="inline-block min-w-[40px] cursor-not-allowed rounded border border-gray-300 bg-gray-200 px-3 py-1 text-center text-gray-500"
-                        ></span>
+                        />
                     </template>
                 </div>
-            </div> -->
+            </div>
         </div>
     </AppLayout>
 
@@ -686,3 +689,22 @@ const confirmDelete = (channel: any) => {
         </div>
     </div>
 </template>
+<style scoped>
+.loader {
+    border: 2px solid #f3f3f3; /* Light grey background */
+    border-top: 2px solid #3498db; /* Blue top border */
+    border-radius: 50%; /* Make it round */
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite; /* Spin animation */
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+</style>

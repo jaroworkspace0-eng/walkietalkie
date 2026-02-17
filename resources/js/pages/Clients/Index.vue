@@ -30,29 +30,37 @@ const errors = ref<{ [key: string]: string[] }>({});
 const flash = ref<{ success?: string; error?: string }>({});
 const isProcessing = ref(false);
 
-const clients = ref<any[]>([]);
-const pagination = ref<any>(null);
+const clients = ref<any>({
+    data: [],
+    from: 0,
+    to: 0,
+    total: 0,
+    links: [],
+    current_page: 1,
+    last_page: 1,
+});
 
-onMounted(async () => {
+async function reloadClients(url?: string) {
     try {
-        const { data } = await axios.get(
-            `${import.meta.env.VITE_APP_URL}/api/clients`,
-            {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`, // if using Sanctum or JWT
-                },
+        const endpoint = url || `${import.meta.env.VITE_APP_URL}/api/clients`;
+
+        const { data } = await axios.get(endpoint, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
-        );
-        clients.value = data.clients.data; // paginated array
-        pagination.value = {
-            current_page: data.clients.current_page,
-            last_page: data.clients.last_page,
-            total: data.clients.total,
-        };
+        });
+
+        clients.value = data.clients;
     } catch (err) {
         console.error('Failed to load clients', err);
     }
+}
+
+onMounted(() => {
+    reloadClients(); // initial load
 });
+
+const pagination = ref<any>(null);
 
 const showModal = ref(false);
 const isEditing = ref(false);
@@ -181,9 +189,13 @@ const handleSubmit = async () => {
             resetForm();
         }
 
+        errors.value = {};
         showMessage(response.data.message);
         closeModal();
         await reloadClients();
+    } catch (err: any) {
+        errors.value = err.response.data.errors;
+        console.error('Failed to submit employee', err);
     } finally {
         isProcessing.value = false;
     }
@@ -232,24 +244,6 @@ const toggleClientStatus = async (client: any) => {
         isProcessing.value = false;
     }
 };
-
-async function reloadClients() {
-    const { data } = await axios.get(
-        `${import.meta.env.VITE_APP_URL}/api/clients`,
-        {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-        },
-    );
-
-    clients.value = data.clients.data;
-    pagination.value = {
-        current_page: data.clients.current_page,
-        last_page: data.clients.last_page,
-        total: data.clients.total,
-    };
-}
 
 async function loadPage(url: string) {
     try {
@@ -309,16 +303,14 @@ async function loadPage(url: string) {
                                         <h2 class="text-lg font-bold">
                                             {{
                                                 isEditing
-                                                    ? 'Edit Client Details'
-                                                    : 'Register New Client'
+                                                    ? 'Edit Client'
+                                                    : 'Add Client'
                                             }}
                                         </h2>
 
                                         <div class="grid gap-4">
                                             <div class="grid gap-3">
-                                                <Label for="name-1"
-                                                    >Client</Label
-                                                >
+                                                <Label for="name-1">Name</Label>
                                                 <input
                                                     id="name-1"
                                                     default-value="Pedro Duarte"
@@ -388,15 +380,23 @@ async function loadPage(url: string) {
                                                 </button>
                                                 <button
                                                     type="submit"
-                                                    class="save-btn"
+                                                    class="save-btn flex items-center justify-center"
                                                 >
-                                                    {{
-                                                        form.processing
-                                                            ? 'Saving...'
-                                                            : isEditing
-                                                              ? 'Update'
-                                                              : 'Create'
-                                                    }}
+                                                    <span
+                                                        v-if="isProcessing"
+                                                        class="loader mr-2"
+                                                    ></span>
+                                                    <span>
+                                                        {{
+                                                            isProcessing
+                                                                ? isEditing
+                                                                    ? 'Updating...'
+                                                                    : 'Adding...'
+                                                                : isEditing
+                                                                  ? 'Update Client'
+                                                                  : 'Add Client'
+                                                        }}
+                                                    </span>
                                                 </button>
                                             </div>
                                         </div>
@@ -452,7 +452,7 @@ async function loadPage(url: string) {
                 </thead>
                 <tbody>
                     <tr
-                        v-for="client in clients"
+                        v-for="client in clients.data"
                         :key="client.id"
                         class="hover:bg-gray-50/50"
                     >
@@ -584,31 +584,35 @@ async function loadPage(url: string) {
             <div
                 class="border-blue-gray-50 flex items-center justify-between border-t p-4"
             >
+                <!-- Pagination info -->
                 <div class="text-sm text-gray-600">
-                    Showing {{ pagination?.from }} to {{ pagination?.to }} of
-                    {{ pagination?.total }} entries
+                    Showing {{ clients.from || 0 }} to {{ clients.to || 0 }} of
+                    {{ clients.total || 0 }} entries
                 </div>
 
-                <div class="flex space-x-2">
+                <!-- Pagination links -->
+                <div class="flex flex-nowrap space-x-2">
                     <template
-                        v-for="link in pagination?.links"
-                        :key="link.label"
+                        v-for="(link, index) in clients.links"
+                        :key="index"
                     >
                         <button
                             v-if="link.url"
-                            @click="loadPage(link.url)"
-                            class="rounded border px-3 py-1"
-                            :class="{
-                                'bg-blue-500 text-white': link.active,
-                                'bg-white text-blue-500': !link.active,
-                            }"
+                            @click="reloadClients(link.url)"
                             v-html="link.label"
-                        ></button>
+                            class="inline-block min-w-[40px] rounded border px-3 py-1 text-center transition-all duration-200"
+                            :class="{
+                                'border-blue-500 bg-blue-500 text-white':
+                                    link.active,
+                                'border-gray-300 bg-white text-blue-500 hover:bg-gray-50':
+                                    !link.active,
+                            }"
+                        />
                         <span
                             v-else
-                            class="rounded border bg-gray-200 px-3 py-1 text-gray-500"
                             v-html="link.label"
-                        ></span>
+                            class="inline-block min-w-[40px] cursor-not-allowed rounded border border-gray-300 bg-gray-200 px-3 py-1 text-center text-gray-500"
+                        />
                     </template>
                 </div>
             </div>
@@ -659,3 +663,22 @@ async function loadPage(url: string) {
         </div>
     </div>
 </template>
+<style scoped>
+.loader {
+    border: 2px solid #f3f3f3; /* Light grey background */
+    border-top: 2px solid #3498db; /* Blue top border */
+    border-radius: 50%; /* Make it round */
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite; /* Spin animation */
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+</style>

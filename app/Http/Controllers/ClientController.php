@@ -44,7 +44,7 @@ class ClientController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:clients,email',
-            'phone' => 'required|integer|unique:clients,phone',
+            'phone' => 'required|digits_between:7,15|unique:clients,phone',
             'address' => 'nullable|string',
         ]);
 
