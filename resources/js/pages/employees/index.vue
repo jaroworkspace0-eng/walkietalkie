@@ -26,9 +26,12 @@ function showMessage(message: string) {
 // 2. Fetch Data
 const reloadEmployees = async () => {
     try {
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get('status'); // "online" or "offline"
         const { data } = await axios.get(
             `${import.meta.env.VITE_APP_URL}/api/employees`,
             {
+                params: { status },
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
