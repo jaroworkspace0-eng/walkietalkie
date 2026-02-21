@@ -15,6 +15,7 @@ const remember = ref(false);
 const processing = ref(false);
 const accountType = ref('admin');
 const error = ref<string | null>(null);
+const apiURL = import.meta.env.VITE_APP_URL;
 
 async function login() {
     processing.value = true;
@@ -22,14 +23,11 @@ async function login() {
 
     try {
         // 1️⃣ Login request
-        const { data } = await axios.post(
-            `${import.meta.env.VITE_APP_URL}/api/login`,
-            {
-                email: email.value,
-                password: password.value,
-                source: 'web',
-            },
-        );
+        const { data } = await axios.post(`${apiURL}/api/login`, {
+            email: email.value,
+            password: password.value,
+            source: 'web',
+        });
 
         const token = data.token;
 
@@ -38,7 +36,7 @@ async function login() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
         // 3️⃣ Fetch current logged-in user
-        const userRes = await axios.get('/api/user');
+        const userRes = await axios.get(`${apiURL}/api/user`);
         localStorage.setItem('user', JSON.stringify(userRes.data));
 
         // 4️⃣ SPA-safe redirect
@@ -58,7 +56,7 @@ async function login() {
 
 <template>
     <AuthBase
-        title="Log in to your account"
+        title="PTT Admin Login"
         description="Enter your email and password below to log in"
     >
         <form @submit.prevent="login" class="flex flex-col gap-6">
