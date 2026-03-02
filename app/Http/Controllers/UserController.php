@@ -70,14 +70,7 @@ class UserController extends Controller
 
     public function toggleStatus(User $user)
     {
-        $user->update([
-            'is_active' => !$user->is_active
-        ]);
-
-          return response()->json([
-                'success' => true,
-                'message' => 'User status updated successfully.',
-            ]);
+        
 
     }
 }

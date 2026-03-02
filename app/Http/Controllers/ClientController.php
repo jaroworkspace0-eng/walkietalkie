@@ -14,17 +14,12 @@ class ClientController extends Controller
      */
     public function index()
     {
-        $clients = Client::orderBy('created_at', 'desc')->paginate(10);
-
-        return response()->json([
-            'clients' => $clients
-        ]);
+      
 
     }
 
     public function clients() {
-        dd('testing');
-        // return new ClientResource(Client::all());
+      
     }
 
     /**
@@ -40,22 +35,7 @@ class ClientController extends Controller
      */
     public function store(Request $request)
     {
-        // return response()->json($request);
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:clients,email',
-            'phone' => 'required|digits_between:7,15|unique:clients,phone',
-            'address' => 'nullable|string',
-        ]);
-
-        $client = Client::create($validated);
-
-          return response()->json([ 
-            'success' => true, 
-            'message' => 'Client created successfully!', 
-            'client' => $client, 
-        ]);
-
+       
     }
 
     /**
@@ -63,7 +43,7 @@ class ClientController extends Controller
      */
     public function show(string $id)
     {
-        return Client::where('is_active', 1)->get();
+        
     }
 
     /**
@@ -79,26 +59,7 @@ class ClientController extends Controller
      */
     public function update(Request $request, Client $client)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-             'email'      => [
-            'required',
-            'email',
-            'max:250',
-            Rule::unique('clients', 'email')->ignore($client->id),
-        ],
-            'phone' => 'required|integer',
-            'address' => 'nullable|string',
-        ]);
-
-        $client->update($validated);
-
-        return response()->json([ 
-            'success' => true, 
-            'message' => 'Client updated successfully!', 
-            'client' => $client, 
-        ]);
-
+       
 
     }
 
@@ -107,36 +68,13 @@ class ClientController extends Controller
      */
    public function destroy($id)
     {
-        $client = Client::find($id);
-
-        if (! $client) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Client not found. ' . $id,
-            ], 404);
-        }
-
-        $client->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Client deleted successfully!',
-            'client' => $client,
-        ]);
+     
     }
 
 
 public function toggleStatus(Client $client)
 {
-    $client->update([
-        'is_active' => !$client->is_active,
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Client status updated successfully.',
-        'client' => $client,
-    ]);
+  
 }
 
 }
